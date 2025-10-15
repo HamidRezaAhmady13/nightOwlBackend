@@ -1,0 +1,92 @@
+<!-- chat-client.html -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Chat Test</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        padding: 20px;
+      }
+      #messages {
+        border: 1px solid #ccc;
+        height: 300px;
+        overflow-y: scroll;
+        padding: 10px;
+      }
+      input,
+      button {
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Chat Room</h2>
+    <div id="messages"></div>
+    <input type="text" id="tokenInput" placeholder="Paste JWT token here" />
+    <button onclick="connect()">Connect</button>
+
+    <input type="text" id="messageInput" placeholder="Type your message..." />
+    <button onclick="sendMessage()">Send</button>
+
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script>
+      let socket;
+      function connect() {
+        const token = document.getElementById('tokenInput').value;
+        if (socket && socket.connected) {
+          console.log('Already connected');
+          return;
+        }
+        socket = io('http://localhost:3000', {
+          auth: { token },
+        });
+
+        socket.on('connect', () => {
+          console.log('Connected to server');
+          socket.emit('message', 'Hello from client!');
+        });
+
+        window.socket = socket; // store globally for sending later
+      }
+      document.addEventListener('DOMContentLoaded', () => {
+        const interval = setInterval(() => {
+          if (window.socket) {
+            window.socket.on('message', (data) => {
+              const msgBox = document.getElementById('messages');
+              const msg = document.createElement('div');
+              msg.textContent = `${data.sender}: ${data.text}`;
+              msgBox.appendChild(msg);
+            });
+            clearInterval(interval);
+          }
+        }, 100);
+      });
+
+      function sendMessage() {
+        const input = document.getElementById('messageInput');
+        const text = input.value;
+
+        if (!window.socket || !window.socket.connected) {
+          alert('You must connect first!');
+          return;
+        }
+
+        window.socket.emit('message', { text, sender: 'Hamid' }); // Replace with dynamic user
+        input.value = '';
+      }
+
+      //   socket.on('connect', () => {
+      //     console.log('Connected to server');
+      //   });
+
+      //   socket.on('message', (data) => {
+      //     const msgBox = document.getElementById('messages');
+      //     const msg = document.createElement('div');
+      //     msg.textContent = `${data.sender}: ${data.text}`;
+      //     msgBox.appendChild(msg);
+      //   });
+    </script>
+  </body>
+</html>
