@@ -3,9 +3,9 @@ import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { Profile } from 'passport';
 import { Strategy } from 'passport-google-oauth20';
+import { CreateUserDto } from 'src/user/dto/create-user.dto';
 import { UserService } from 'src/user/user.service';
 import { AuthService } from '../auth.service';
-import { CreateUserDto } from 'src/user/dto/create-user.dto';
 
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
@@ -23,35 +23,51 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       clientID,
       clientSecret,
       callbackURL: 'http://localhost:3000/auth/google/callback',
-      scope: ['email', 'profile'],
+      // include openid to ensure email/id claims are returned consistently
+      scope: ['openid', 'profile', 'email'],
     });
   }
   async validate(
     accessToken: string,
     refreshToken: string,
     profile: Profile,
-    done: Function,
   ): Promise<any> {
-    const email = profile.emails?.[0]?.value;
-    if (!email) throw new Error('Email not found in Google profile');
+    // Try multiple places for email (profile.emails, raw JSON). If absent,
+    // synthesize one so signup can proceed; log minimal context for debugging.
+    let email = profile.emails?.[0]?.value;
+    if (!email && (profile as any)._json && (profile as any)._json.email) {
+      email = (profile as any)._json.email;
+    }
+
+    if (!email) {
+      console.warn(
+        `GoogleStrategy: email missing for profile id=${profile.id}, proceeding with synthetic email`,
+      );
+      email = `${profile.id}@google.local`;
+    }
 
     const existingUser = await this.userService.findByEmail(email);
-    if (existingUser) return done(null, existingUser);
+    if (existingUser) return existingUser;
+
     const { name, photos } = profile;
 
     const createUserDto: CreateUserDto = {
-      username: email.split('@')[0], // or generate a unique one
+      username: email.split('@')[0],
       email,
-      password: Math.random().toString(36).slice(-8), // 🔐 random password
+      password: Math.random().toString(36).slice(-8),
       avatarUrl: photos?.[0]?.value,
-      bio: `${name?.givenName} ${name?.familyName} via Google`,
+      bio:
+        `${name?.givenName ?? ''} ${name?.familyName ?? ''}`.trim() +
+        ' via Google',
     };
+
     const newUser = await this.userService.createUser({
       ...createUserDto,
-      password: '', // or null — not used for OAuth
-      provider: 'google', // ✅ THIS is where you set it
+      password: '',
+      provider: 'google',
     });
 
-    done(null, newUser);
+    // For Nest + Passport integration, return the user instead of calling done()
+    return newUser;
   }
 }

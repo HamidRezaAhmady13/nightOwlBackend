@@ -3,12 +3,14 @@ import {
   Controller,
   Delete,
   Get,
+  NotFoundException,
   Param,
   Patch,
   Post,
   Query,
   Req,
   Res,
+  UnauthorizedException,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -19,24 +21,45 @@ import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
+import { PostService } from 'src/post/post.service';
+import { RedisService } from 'src/redis/redis.service';
+import { SafeUserDto } from './dto/safe-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entity/user.entity';
 import { UserService } from './user.service';
-// import { CreateUserDto } from './dto/create-user.dto';
 
 @UseGuards(JwtAuthGuard)
 @Controller('users')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+    private readonly postService: PostService,
+    private readonly redis: RedisService,
+  ) {}
 
   @Get('me')
   async getMe(
     @CurrentUser() user: User,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const fullUser = await this.userService.getMe(user.id);
+    if (!user) throw new UnauthorizedException('Not authenticated');
+    const userId =
+      (user as any).id ?? (user as any).userId ?? (user as any).sub;
+    if (!userId) throw new UnauthorizedException('Not authenticated');
 
-    res.cookie('theme', fullUser.settings?.theme || 'light', {
+    // 1. Try cache first
+    const cacheKey = `user:${userId}`;
+    const cached = await this.redis.get(cacheKey);
+    let fullUser: SafeUserDto;
+
+    if (cached) {
+      fullUser = JSON.parse(cached) as SafeUserDto;
+    } else {
+      fullUser = await this.userService.getMe(String(userId));
+      await this.redis.set(cacheKey, JSON.stringify(fullUser), 60_000);
+    }
+
+    res.cookie('theme', fullUser?.settings?.theme || 'light', {
       httpOnly: false,
       sameSite: 'lax',
     });
@@ -50,14 +73,16 @@ export class UserController {
     @Body('theme') theme: 'light' | 'dark',
     @Res({ passthrough: true }) res: Response,
   ) {
-    const userId = req.user.id; // assuming you have auth middleware
+    const userId = req.user?.id;
+    if (!userId) throw new UnauthorizedException('Not authenticated');
+
     const updatedUser = await this.userService.updateTheme(userId, theme);
-    console.log(userId, theme);
     res.cookie('theme', updatedUser.settings?.theme || 'light', {
       httpOnly: false,
       sameSite: 'lax',
     });
-    return this.userService.updateTheme(userId, theme);
+
+    return updatedUser;
   }
 
   @Patch('me')
@@ -98,6 +123,7 @@ export class UserController {
 
   @Get('profile')
   getProfile(@Req() req: Request) {
+    if (!req.user) throw new UnauthorizedException('Not authenticated');
     return req.user;
   }
 
@@ -107,8 +133,6 @@ export class UserController {
     @Query('limit') limit = 20,
     @Query('page') page = 1,
   ) {
-    console.log('Search query:', query, 'limit:', limit, 'page:', page);
-
     return this.userService.searchUsers(query, Number(limit), Number(page));
   }
 
@@ -127,7 +151,8 @@ export class UserController {
     @Param('username') username: string,
     @CurrentUser() currentUser: User,
   ) {
-    return this.userService.followUser(currentUser.id, username);
+    const decoded = decodeURIComponent(username);
+    return this.userService.followUser(currentUser.id, decoded);
   }
 
   @Delete(':username/unfollow')
@@ -135,11 +160,27 @@ export class UserController {
     @Param('username') username: string,
     @CurrentUser() currentUser: User,
   ) {
-    return this.userService.unfollowUser(currentUser.id, username);
+    const decoded = decodeURIComponent(username);
+    return this.userService.unfollowUser(currentUser.id, decoded);
+  }
+
+  @Get(':username/posts')
+  async getPostsByUsername(
+    @Param('username') username: string,
+    @Query('limit') limit = '24',
+    @Query('cursor') cursor?: string,
+  ) {
+    // service should find the user by username, then get posts for that user's id
+    const decoded = decodeURIComponent(username);
+    const user = await this.userService.findByUsername(decoded);
+    if (!user) throw new NotFoundException('User not found');
+    return this.postService.getPostsCursor(user.id, { limit: +limit, cursor });
   }
 
   @Get(':username')
   getUser(@Param('username') username: string) {
-    return this.userService.findByUsername(username);
+    const decoded = decodeURIComponent(username);
+
+    return this.userService.findByUsername(decoded);
   }
 }

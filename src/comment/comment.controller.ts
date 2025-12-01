@@ -23,16 +23,10 @@ export class CommentController {
   @Get('post/:postId')
   getCommentsForPost(
     @Param('postId') postId: string,
-    @CurrentUser() user: User,
+    @CurrentUser() user: { id: string },
     @Query('page') page = 1,
     @Query('limit') limit = 10,
   ) {
-    console.log('GET /comments/post/:postId called', {
-      postId,
-      userId: user?.id,
-      page,
-      limit,
-    });
     return this.commentService.getCommentsForPost(
       postId,
       user.id,
@@ -57,16 +51,11 @@ export class CommentController {
 
   @Post(':id/like')
   async likeComment(@Param('id') id: string, @CurrentUser() user: User) {
-    console.log(id, '###########!@@@@@@@@@@');
-    // console.log(user);
-
     return this.commentService.likeComment(id, user.id);
   }
 
   @Delete(':id/like')
   async unlikeComment(@Param('id') id: string, @CurrentUser() user: User) {
-    console.log(id, '##########');
-
     return this.commentService.unlikeComment(id, user.id);
   }
 

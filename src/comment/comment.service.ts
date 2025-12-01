@@ -1,6 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { NotificationService } from 'src/notifications/notification.service';
 import { Post } from 'src/post/entity/posts.entity';
+import { RedisService } from 'src/redis/redis.service';
+import { SocketService } from 'src/socket/socket.service';
 import { User } from 'src/user/entity/user.entity';
 import { Repository } from 'typeorm';
 import { Comment } from './entity/comment.entity';
@@ -14,6 +17,9 @@ export class CommentService {
     private readonly postRepo: Repository<Post>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+    private readonly notificationService: NotificationService,
+    private readonly redis: RedisService,
+    private readonly socketService: SocketService,
   ) {}
 
   async createComment(
@@ -22,7 +28,10 @@ export class CommentService {
     author: User,
     parentCommentId?: string,
   ) {
-    const post = await this.postRepo.findOne({ where: { id: postId } });
+    const post = await this.postRepo.findOne({
+      where: { id: postId },
+      relations: ['owner'],
+    });
     if (!post) throw new NotFoundException('Post not found');
 
     let parentComment: Comment | null = null;
@@ -33,7 +42,6 @@ export class CommentService {
       if (!parentComment)
         throw new NotFoundException('Parent comment not found');
 
-      // Increment reply count for the parent
       await this.commentRepo.increment(
         { id: parentCommentId },
         'replyCount',
@@ -41,8 +49,8 @@ export class CommentService {
       );
     }
 
-    // Always increment total comments count for the post
     await this.postRepo.increment({ id: postId }, 'commentsCount', 1);
+    await this.redis.incr(`post:${postId}:comments`);
 
     const comment = this.commentRepo.create({
       text,
@@ -50,6 +58,27 @@ export class CommentService {
       post,
       parentComment,
     });
+    const savedComment = await this.commentRepo.save(comment);
+
+    console.log(post.owner);
+    console.log(post.owner.id);
+
+    if (post.owner && post.owner.id && post.owner.id !== author.id) {
+      const ntf = await this.notificationService.createForUser(post.owner.id, {
+        type: 'comment',
+        smallBody: `${author.username} commented on your post`,
+        payloadRef: { postId, commentId: savedComment.id },
+        meta: {},
+        sourceId: savedComment.id,
+      });
+
+      const unread = await this.notificationService.countUnreadForUser(
+        post.owner.id,
+      );
+
+      this.socketService.emitNotificationToUser(post.owner.id, ntf);
+      this.socketService.emitUnreadCount(post.owner.id, unread);
+    }
 
     return this.commentRepo.save(comment);
   }
@@ -132,22 +161,44 @@ export class CommentService {
   async likeComment(commentId: string, userId: string) {
     const comment = await this.commentRepo.findOne({
       where: { id: commentId },
-      relations: ['likedByUsers'],
+      relations: ['likedByUsers', 'author', 'post'],
     });
+
     if (!comment) throw new NotFoundException('Comment not found');
-    console.log(commentId);
-    console.log(userId);
 
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
 
-    if (!comment.likedByUsers.some((u) => u.id === userId)) {
-      comment.likedByUsers.push(user);
-      comment.likeCount++;
-      await this.commentRepo.save(comment);
+    const alreadyLiked = comment.likedByUsers.some((u) => u.id === userId);
+    if (alreadyLiked) return comment; // no-op if already liked
+
+    comment.likedByUsers.push(user);
+    comment.likeCount++;
+    const saved = await this.commentRepo.save(comment);
+
+    // Redis counter
+    await this.redis.incr(`comment:${commentId}:likes`);
+    // ntf
+    const owner = comment.author;
+    console.log(comment);
+    if (owner && owner.id !== userId) {
+      const ntf = await this.notificationService.createForUser(owner.id, {
+        type: 'like',
+        smallBody: `${user.username ?? 'Someone'} liked your comment`,
+        payloadRef: { commentId, postId: comment.post?.id },
+        meta: {},
+        sourceId: commentId,
+      });
+
+      const unread = await this.notificationService.countUnreadForUser(
+        owner.id,
+      );
+
+      this.socketService.emitNotificationToUser(owner.id, ntf);
+      this.socketService.emitUnreadCount(owner.id, unread);
     }
 
-    return comment;
+    return saved;
   }
 
   async unlikeComment(commentId: string, userId: string) {
@@ -157,9 +208,16 @@ export class CommentService {
     });
     if (!comment) throw new NotFoundException('Comment not found');
 
+    const beforeCount = comment.likedByUsers.length;
     comment.likedByUsers = comment.likedByUsers.filter((u) => u.id !== userId);
-    comment.likeCount = Math.max(0, comment.likeCount - 1);
-    await this.commentRepo.save(comment);
+
+    if (comment.likedByUsers.length < beforeCount) {
+      comment.likeCount = Math.max(0, comment.likeCount - 1);
+      await this.commentRepo.save(comment);
+
+      // Redis counter
+      await this.redis.decr(`comment:${commentId}:likes`);
+    }
 
     return comment;
   }

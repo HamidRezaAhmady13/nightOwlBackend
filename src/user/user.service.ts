@@ -1,16 +1,17 @@
 // user.service.ts
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import {
   BadRequestException,
   ConflictException,
-  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
-import { Cache } from 'cache-manager';
 import { plainToInstance } from 'class-transformer';
+import { NotificationService } from 'src/notifications/notification.service';
+import { RedisService } from 'src/redis/redis.service';
+import { SocketService } from 'src/socket/socket.service';
 import { StorageService } from 'src/storage/storage.service';
 import { Repository } from 'typeorm';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -24,8 +25,269 @@ export class UserService {
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
     private readonly storageService: StorageService,
-    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    private readonly configService: ConfigService,
+    private readonly redis: RedisService,
+    private readonly socketService: SocketService,
+    private readonly notificationService: NotificationService,
   ) {}
+
+  // async followUser(currentUserId: string, targetUsername: string) {
+  //   const qr = this.userRepo.manager.connection.createQueryRunner();
+  //   await qr.connect();
+  //   await qr.startTransaction();
+  //   try {
+  //     const target = await qr.manager.findOne(User, {
+  //       where: { username: targetUsername },
+  //     });
+  //     if (!target) throw new NotFoundException('Target user not found');
+
+  //     // lock the join row (if exists) to serialize concurrent ops for this pair
+  //     const existing = await qr.manager.query(
+  //       `SELECT 1 FROM user_follows WHERE follower_id = $1 AND followed_id = $2 FOR UPDATE`,
+  //       [currentUserId, target.id],
+  //     );
+
+  //     // FOLLOW
+  //     if (existing.length === 0) {
+  //       await qr.manager
+  //         .createQueryBuilder()
+  //         .relation(User, 'following')
+  //         .of({ id: currentUserId })
+  //         .add(target.id);
+
+  //       await qr.manager.increment(
+  //         User,
+  //         { id: currentUserId },
+  //         'followingsCount',
+  //         1,
+  //       );
+  //       await qr.manager.increment(
+  //         User,
+  //         { id: target.id },
+  //         'followersCount',
+  //         1,
+  //       );
+  //     } else {
+  //       // already following — nothing to do (or return early)
+  //     }
+
+  //     await qr.commitTransaction();
+
+  //     // fetch fresh state and update cache immediately
+  //     // after commit
+  //     const freshCurrent = await qr.manager.findOne(User, {
+  //       where: { id: currentUserId },
+  //       relations: ['following'],
+  //     });
+  //     const freshTarget = await qr.manager.findOne(User, {
+  //       where: { id: target.id },
+  //       select: ['id', 'username', 'avatarUrl'],
+  //     });
+  //     if (!freshCurrent)
+  //       throw new NotFoundException('freshCurrent user not found');
+
+  //     // atomically replace cache: delete keys then set fresh JSON
+
+  //     await this.redis.del(`user:${currentUserId}`);
+  //     await this.redis.del(`user:uname:${freshCurrent.username}`);
+  //     await this.redis.set(
+  //       `user:${currentUserId}`,
+  //       JSON.stringify(freshCurrent),
+  //       10,
+  //     ); // 1s TTL
+  //     // return server truth
+  //     return { currentUser: freshCurrent };
+  //   } catch (err) {
+  //     try {
+  //       await qr.rollbackTransaction();
+  //     } catch {}
+  //     // handle unique-constraint error gracefully if it occurs
+  //     if ((err as any).code === '23505') {
+  //       /* duplicate key — treat as already-following */
+  //     }
+  //     throw err;
+  //   } finally {
+  //     await qr.release();
+  //   }
+  // }
+
+  async followUser(currentUserId: string, targetUsername: string) {
+    const qr = this.userRepo.manager.connection.createQueryRunner();
+    await qr.connect();
+    await qr.startTransaction();
+    try {
+      const target = await qr.manager.findOne(User, {
+        where: { username: targetUsername },
+        relations: ['followers'], // optional if you want to inspect
+      });
+      if (!target) throw new NotFoundException('Target user not found');
+
+      // lock the join row (if exists) to serialize concurrent ops for this pair
+      const existing = await qr.manager.query(
+        `SELECT 1 FROM user_follows WHERE follower_id = $1 AND followed_id = $2 FOR UPDATE`,
+        [currentUserId, target.id],
+      );
+
+      // FOLLOW
+      if (existing.length === 0) {
+        await qr.manager
+          .createQueryBuilder()
+          .relation(User, 'following')
+          .of({ id: currentUserId })
+          .add(target.id);
+
+        await qr.manager.increment(
+          User,
+          { id: currentUserId },
+          'followingsCount',
+          1,
+        );
+        await qr.manager.increment(
+          User,
+          { id: target.id },
+          'followersCount',
+          1,
+        );
+      }
+
+      await qr.commitTransaction();
+
+      // fetch fresh state and update cache immediately
+      const freshCurrent = await qr.manager.findOne(User, {
+        where: { id: currentUserId },
+        relations: ['following'],
+      });
+      const freshTarget = await qr.manager.findOne(User, {
+        where: { id: target.id },
+        select: ['id', 'username', 'avatarUrl'],
+      });
+      if (!freshCurrent)
+        throw new NotFoundException('freshCurrent user not found');
+
+      // atomically replace cache
+      await this.redis.del(`user:${currentUserId}`);
+      await this.redis.del(`user:uname:${freshCurrent.username}`);
+      await this.redis.set(
+        `user:${currentUserId}`,
+        JSON.stringify(freshCurrent),
+        10,
+      );
+
+      // 🔔 Notify target user (like in toggleLike)
+      if (freshTarget && freshTarget.id !== currentUserId) {
+        const ntf = await this.notificationService.createForUser(
+          freshTarget.id,
+          {
+            type: 'follow',
+            smallBody: `${freshCurrent.username ?? 'Someone'} followed you`,
+            payloadRef: { followerId: currentUserId },
+            meta: {},
+            sourceId: currentUserId,
+          },
+        );
+
+        const unread = await this.notificationService.countUnreadForUser(
+          freshTarget.id,
+        );
+
+        // emit via SocketService
+        this.socketService.emitNotificationToUser(freshTarget.id, ntf);
+        this.socketService.emitUnreadCount(freshTarget.id, unread);
+      }
+
+      // return server truth
+      return { currentUser: freshCurrent };
+    } catch (err) {
+      try {
+        await qr.rollbackTransaction();
+      } catch {}
+      if ((err as any).code === '23505') {
+        /* duplicate key — treat as already-following */
+      }
+      throw err;
+    } finally {
+      await qr.release();
+    }
+  }
+
+  async unfollowUser(currentUserId: string, targetUsername: string) {
+    const qr = this.userRepo.manager.connection.createQueryRunner();
+    await qr.connect();
+    await qr.startTransaction();
+
+    try {
+      const target = await qr.manager.findOne(User, {
+        where: { username: targetUsername },
+      });
+      if (!target) throw new NotFoundException('Target user not found');
+
+      // lock the join row (if exists) to serialize concurrent ops for this pair
+      const existing = await qr.manager.query(
+        `SELECT 1 FROM user_follows WHERE follower_id = $1 AND followed_id = $2 FOR UPDATE`,
+        [currentUserId, target.id],
+      );
+
+      // FOLLOW
+      if (existing.length > 0) {
+        await qr.manager
+          .createQueryBuilder()
+          .relation(User, 'following')
+          .of({ id: currentUserId })
+          .remove(target.id);
+
+        await qr.manager.decrement(
+          User,
+          { id: currentUserId },
+          'followingsCount',
+          1,
+        );
+        await qr.manager.decrement(
+          User,
+          { id: target.id },
+          'followersCount',
+          1,
+        );
+      } else {
+        // already following — nothing to do (or return early)
+      }
+
+      await qr.commitTransaction();
+      // fetch fresh state and update cache immediately
+      // after commit
+      const freshCurrent = await qr.manager.findOne(User, {
+        where: { id: currentUserId },
+        relations: ['following'],
+      });
+      const freshTarget = await qr.manager.findOne(User, {
+        where: { id: target.id },
+        select: ['id', 'username', 'avatarUrl'],
+      });
+      if (!freshCurrent)
+        throw new NotFoundException('freshCurrent user not found');
+      // atomically replace cache: delete keys then set fresh JSON
+
+      await this.redis.del(`user:${currentUserId}`);
+      await this.redis.del(`user:uname:${freshCurrent.username}`);
+      await this.redis.set(
+        `user:${currentUserId}`,
+        JSON.stringify(freshCurrent),
+        10,
+      ); // 1s TTL
+      // return server truth
+      return { currentUser: freshCurrent };
+    } catch (err) {
+      try {
+        await qr.rollbackTransaction();
+      } catch {}
+      // handle unique-constraint error gracefully if it occurs
+      if ((err as any).code === '23505') {
+        /* duplicate key — treat as already-following */
+      }
+      throw err;
+    } finally {
+      await qr.release();
+    }
+  }
 
   async findAll(): Promise<User[]> {
     return this.userRepo.find();
@@ -80,12 +342,16 @@ export class UserService {
     await this.userRepo.delete(id);
   }
 
-  async getMe(userId: string): Promise<User> {
-    const cached = await this.cacheManager.get<User>(`user:${userId}`);
-    if (cached) return cached;
+  async getMe(userId: string): Promise<SafeUserDto> {
+    const id = String(userId);
+    const ttlSeconds = Number(this.configService.get('USER_CACHE_TTL') ?? 600);
+    const key = `user:${id}`;
+
+    const cached = await this.redis.get(key);
+    if (cached) return JSON.parse(cached) as SafeUserDto;
 
     const user = await this.userRepo.findOne({
-      where: { id: userId },
+      where: { id },
       relations: ['following'],
       select: [
         'id',
@@ -99,13 +365,14 @@ export class UserService {
         'settings',
       ],
     });
-
     if (!user) throw new NotFoundException('User not found');
+
     const safeUser = plainToInstance(SafeUserDto, user, {
       excludeExtraneousValues: true,
     });
-    await this.cacheManager.set(`user:${userId}`, user, 600 * 1000);
-    return user;
+    await this.redis.set(key, JSON.stringify(safeUser), ttlSeconds);
+
+    return safeUser;
   }
 
   async updateUser(userId: string, dto: UpdateUserDto): Promise<SafeUserDto> {
@@ -128,147 +395,11 @@ export class UserService {
       relations: ['following'],
     });
 
-    await this.cacheManager.del(`user:${userId}`);
+    await this.redis.del(`user:${userId}`);
 
     return plainToInstance(SafeUserDto, updatedUser, {
       excludeExtraneousValues: true,
     });
-  }
-
-  // async followUser(
-  //   currentUserId: string,
-  //   targetUsername: string,
-  // ): Promise<{ message: string } | void> {
-  //   const targetUser = await this.userRepo.findOneBy({
-  //     username: targetUsername,
-  //   });
-  //   if (!targetUser) throw new NotFoundException('Target user not found');
-
-  //   // relation API manipulates the DB join table directly and does not require loading arrays
-  //   await this.userRepo
-  //     .createQueryBuilder()
-  //     .relation(User, 'following')
-  //     .of(currentUserId)
-  //     .add(targetUser.id);
-
-  //   await this.cacheManager.del(`user:${currentUserId}`);
-  //   await this.cacheManager.del(`user:${targetUser.id}`);
-
-  //   return { message: `You are now following ${targetUsername}` };
-  // }
-
-  // async unfollowUser(
-  //   currentUserId: string,
-  //   targetUsername: string,
-  // ): Promise<{ message: string } | void> {
-  //   const targetUser = await this.userRepo.findOneBy({
-  //     username: targetUsername,
-  //   });
-  //   if (!targetUser) throw new NotFoundException('Target user not found');
-
-  //   await this.userRepo
-  //     .createQueryBuilder()
-  //     .relation(User, 'following')
-  //     .of(currentUserId)
-  //     .remove(targetUser.id);
-
-  //   await this.cacheManager.del(`user:${currentUserId}`);
-  //   await this.cacheManager.del(`user:${targetUser.id}`);
-
-  //   return { message: `You have unfollowed ${targetUsername}` };
-  // }
-
-  // in UserService (or where follow/unfollow live)
-  async followUser(currentUserId: string, targetUsername: string) {
-    const queryRunner = this.userRepo.manager.connection.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-    try {
-      const targetUser = await queryRunner.manager.findOne(User, {
-        where: { username: targetUsername },
-      });
-      if (!targetUser) throw new NotFoundException('Target user not found');
-
-      // add relation (will insert into user_follows)
-      await queryRunner.manager
-        .createQueryBuilder()
-        .relation(User, 'following')
-        .of(currentUserId)
-        .add(targetUser.id);
-
-      // increment counts atomically
-      await queryRunner.manager.increment(
-        User,
-        { id: currentUserId },
-        'followingsCount',
-        1,
-      );
-      await queryRunner.manager.increment(
-        User,
-        { id: targetUser.id },
-        'followersCount',
-        1,
-      );
-
-      await queryRunner.commitTransaction();
-
-      // invalidate caches after commit
-      await this.cacheManager.del(`user:${currentUserId}`);
-      await this.cacheManager.del(`user:${targetUser.id}`);
-
-      return { message: `You are now following ${targetUsername}` };
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
-  }
-
-  async unfollowUser(currentUserId: string, targetUsername: string) {
-    const queryRunner = this.userRepo.manager.connection.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-    try {
-      const targetUser = await queryRunner.manager.findOne(User, {
-        where: { username: targetUsername },
-      });
-      if (!targetUser) throw new NotFoundException('Target user not found');
-
-      // remove relation
-      await queryRunner.manager
-        .createQueryBuilder()
-        .relation(User, 'following')
-        .of(currentUserId)
-        .remove(targetUser.id);
-
-      // decrement counts atomically (guard against negative)
-      await queryRunner.manager.decrement(
-        User,
-        { id: currentUserId },
-        'followingsCount',
-        1,
-      );
-      await queryRunner.manager.decrement(
-        User,
-        { id: targetUser.id },
-        'followersCount',
-        1,
-      );
-
-      await queryRunner.commitTransaction();
-
-      // invalidate caches after commit
-      await this.cacheManager.del(`user:${currentUserId}`);
-      await this.cacheManager.del(`user:${targetUser.id}`);
-
-      return { message: `You have unfollowed ${targetUsername}` };
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
   }
 
   async createOAuthUser(dto: Partial<CreateUserDto> & { provider: string }) {
@@ -276,8 +407,6 @@ export class UserService {
   }
 
   async searchUsers(query: string, limit = 20, page = 1) {
-    console.log(query);
-
     const [data, total] = await this.userRepo
       .createQueryBuilder('user')
       .select(['user.id', 'user.username', 'user.avatarUrl'])
@@ -317,13 +446,22 @@ export class UserService {
       theme: 'light',
       language: null,
     };
-    // Merge existing settings with new theme
     user.settings = {
       notifications: old.notifications,
-      theme, // your new theme
+      theme,
       language: old.language,
     };
 
-    return this.userRepo.save(user);
+    const saved = await this.userRepo.save(user);
+    await this.redis.del(`user:${userId}`); // <<< clear stale cache
+    return saved;
+  }
+
+  // user.service.ts
+  async findByEmailWithPassword(email: string) {
+    return this.userRepo.findOne({
+      where: { email },
+      select: ['id', 'email', 'password', 'provider'], // include only needed fields
+    });
   }
 }

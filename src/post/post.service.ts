@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -13,6 +14,9 @@ import * as path from 'path';
 import { extractQualityFromFilename } from 'src/common/utils/extractQualityFromFilename';
 import { toUrlPath } from 'src/common/utils/toUrlPth';
 import { MediaService } from 'src/media/media.service';
+import { NotificationService } from 'src/notifications/notification.service';
+import { RedisService } from 'src/redis/redis.service';
+import { SocketService } from 'src/socket/socket.service';
 import { User } from 'src/user/entity/user.entity';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
@@ -29,42 +33,113 @@ export class PostService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly mediaService: MediaService,
+    private readonly redis: RedisService,
+    private readonly socketService: SocketService,
+    private readonly notificationService: NotificationService,
   ) {}
+  private readonly logger = new Logger(PostService.name);
+  async getPostsCursor(
+    userId: string,
+    opts: { limit?: number; cursor?: string },
+  ) {
+    const limit = Math.min(50, opts.limit ?? 24);
+    const take = limit + 1; // fetch one extra to detect more pages
 
-  // async removeMediaBatch(
-  //   mediaIds: string[],
-  //   manager?: EntityManager,
-  // ): Promise<void> {
-  //   if (!mediaIds?.length) return;
+    // parse cursor: expected "ISOtimestamp|uuid"
+    let cursorTs: string | undefined;
+    let cursorId: string | undefined;
+    if (opts.cursor) {
+      const parts = String(opts.cursor).split('|');
+      cursorTs = parts[0];
+      cursorId = parts[1];
+    }
 
-  //   const repo = manager ? manager.getRepository(Media) : this.mediaRepository;
+    // 1) Posts-only pagination query (no joins)
+    const qb = this.postRepository
+      .createQueryBuilder('post')
+      .where('post.ownerId = :userId', { userId })
+      .orderBy('post.createdAt', 'DESC')
+      .addOrderBy('post.id', 'DESC')
+      .take(take);
 
-  //   // fetch rows first so we know file paths to delete
-  //   const rows = await repo.findByIds(mediaIds);
+    if (cursorTs && cursorId) {
+      qb.andWhere(
+        new Brackets((b) => {
+          b.where('post."createdAt" < :cursorTs::timestamp', {
+            cursorTs,
+          }).orWhere(
+            new Brackets((bb) => {
+              bb.where('post."createdAt" = :cursorTs::timestamp', {
+                cursorTs,
+              }).andWhere('post.id < :cursorId::uuid', { cursorId });
+            }),
+          );
+        }),
+      );
+    }
 
-  //   // delete DB rows
-  //   await repo.delete(mediaIds);
+    const posts = await qb.getMany();
 
-  //   // try to unlink files (best-effort, do not throw when file missing)
-  //   for (const r of rows) {
-  //     if (!r.url) continue;
-  //     try {
-  //       // r.url may be stored as a relative path like '/uploads/...'
-  //       const filePath = r.url.startsWith('/')
-  //         ? path.join(process.cwd(), r.url)
-  //         : path.join(process.cwd(), r.url);
-  //       // use unlinkSync for simplicity; or await fs.promises.unlink(filePath)
-  //       if (fs.existsSync(filePath)) {
-  //         fs.unlinkSync(filePath);
-  //       }
-  //     } catch (err) {
-  //       // log and continue; do not fail the transaction because of FS cleanup
-  //       console.warn('Failed to unlink media file', r.url, err);
-  //     }
-  //   }
-  // }
+    // 2) Decide returned page items and nextCursor deterministically
+    let nextCursor: string | null = null;
+    let pageItems = posts;
 
-  // Save a single media row inside an optional manager
+    if (posts.length === take) {
+      // we got one extra row; return first `limit` items and set cursor to last returned item
+      pageItems = posts.slice(0, limit);
+      const lastReturned = pageItems[pageItems.length - 1];
+      nextCursor = `${lastReturned.createdAt.toISOString()}|${lastReturned.id}`;
+    } else {
+    }
+
+    // 3) Fetch media for the returned items only and map by post.id
+    const ids = pageItems.map((p) => p.id);
+    const mediaMap = new Map<string, Media[]>();
+
+    if (ids.length) {
+      const mediaQb = this.mediaRepository
+        .createQueryBuilder('media')
+        .leftJoinAndSelect('media.post', 'post')
+        .where('post.id IN (:...ids)', { ids });
+
+      const mediaRows = await mediaQb.getMany();
+
+      for (const m of mediaRows) {
+        // support both relations and raw postId
+        const postId = (m as any).post ? (m as any).post.id : (m as any).postId;
+        if (!postId) continue;
+        const arr = mediaMap.get(postId) ?? [];
+        arr.push(m);
+        mediaMap.set(postId, arr);
+      }
+    }
+
+    // 4) Build previews deterministically (prefer thumbnails/images then non-video then first)
+    const previews = pageItems.map((p) => {
+      const mediaForPost = mediaMap.get(p.id) ?? [];
+      const img =
+        mediaForPost.find((m) =>
+          /\.(webp|avif|jpe?g|png)$/i.test((m as any).url),
+        ) ??
+        mediaForPost.find((m) => !/\.(mp4|mov|webm)$/i.test((m as any).url)) ??
+        mediaForPost[0];
+      const imageUrl = img ? (img as any).url : null;
+
+      if (!imageUrl) {
+      }
+
+      return {
+        id: p.id,
+        imageUrl,
+        createdAt: p.createdAt,
+        likesCount: p.likesCount,
+        commentsCount: p.commentsCount,
+      };
+    });
+
+    return { items: previews, nextCursor };
+  }
+
   async saveMediaRow(
     data: Partial<Media>,
     manager?: EntityManager,
@@ -85,137 +160,6 @@ export class PostService {
     return repo.save(entities);
   }
 
-  // NEVER DELETE THIS COMMENTED PART UNTIL U MADE SURE ITS OK!!!!!!
-  // async createPost(
-  //   dto: CreatePostDto,
-  //   user: User,
-  //   media?: Express.Multer.File,
-  // ) {
-  //   //
-  //   // const queryRunner =
-  //   //   this.postRepository.manager.connection.createQueryRunner();
-  //   // await queryRunner.connect();
-  //   // queryRunner.startTransaction;
-
-  //   //
-  //   if (!dto.content?.trim() && !media?.path) {
-  //     throw new BadRequestException('Post must include content or media.');
-  //   }
-
-  //   const post = this.postRepository.create({
-  //     content: dto.content,
-  //     owner: user,
-  //   });
-  //   await this.postRepository.save(post);
-
-  //   //
-  //   // try {
-  //   //   const post = this.postRepository.create({ content: dto.content, owner: user });
-  //   //   await queryRunner.manager.save(post);
-  //   //
-
-  //   if (media?.path) {
-  //     const safeName = media.originalname
-  //       .replace(/\s+/g, '-')
-  //       .replace(/[^a-zA-Z0-9-_]/g, '');
-  //     const timestamp = Date.now();
-  //     const ext = path.extname(media.originalname).toLowerCase();
-  //     const finalName = `${safeName}-original-${timestamp}${ext}`;
-  //     const finalPath = path.join(
-  //       process.cwd(),
-  //       'uploads',
-  //       `user-${user.id}`,
-  //       `post-${post.id}`,
-  //       'original',
-  //       finalName,
-  //     );
-
-  //     fs.mkdirSync(path.dirname(finalPath), { recursive: true });
-  //     fs.renameSync(media.path, finalPath);
-
-  //     const mimeType = media.mimetype; // from Multer
-
-  //     // Simple guard: only run processVideo for actual videos
-  //     if (
-  //       mimeType.startsWith('video/') &&
-  //       [
-  //         '.mp4',
-  //         '.mov',
-  //         '.mkv',
-  //         '.avi',
-  //         '.webm',
-  //         '.flv',
-  //         '.wmv',
-  //         '.m4v',
-  //       ].includes(ext)
-  //     ) {
-  //       const processed = await this.mediaService.processVideo(
-  //         finalPath,
-  //         user.id,
-  //         post.id,
-  //         media.originalname,
-  //       );
-
-  //       // Save mp4 variants
-  //       for (const variantPath of processed.mp4Variants) {
-  //         const quality = extractQualityFromFilename(variantPath);
-  //         const relativePath = toUrlPath(variantPath);
-  //         await this.mediaRepository.save(
-  //           this.mediaRepository.create({
-  //             type: 'video',
-  //             url: relativePath,
-  //             owner: user,
-  //             post,
-  //             quality,
-  //           }),
-  //         );
-  //       }
-
-  //       for (const thumbPath of processed.thumbnails) {
-  //         const relativePath = toUrlPath(thumbPath);
-  //         await this.mediaRepository.save(
-  //           this.mediaRepository.create({
-  //             type: 'image',
-  //             url: relativePath,
-  //             owner: user,
-  //             post,
-  //           }),
-  //         );
-  //       }
-
-  //       // Save original video
-  //       await this.mediaRepository.save(
-  //         this.mediaRepository.create({
-  //           type: 'video',
-  //           url: finalPath.replace(process.cwd(), ''),
-  //           owner: user,
-  //           post,
-  //           quality: 'original',
-  //         }),
-  //       );
-  //     } else {
-  //       // Non-video: just save as image/file
-  //       await this.mediaRepository.save(
-  //         this.mediaRepository.create({
-  //           type: mimeType.startsWith('image/') ? 'image' : 'file',
-  //           url: finalPath.replace(process.cwd(), ''),
-  //           owner: user,
-  //           post,
-  //         }),
-  //       );
-  //     }
-  //   }
-
-  //   return post;
-  // }
-
-  // async getAllPosts(userId: string) {
-  //   return this.postRepository.find({
-  //     where: { owner: { id: userId } },
-  //     relations: ['media', 'likedBy', 'comments'],
-  //     order: { createdAt: 'DESC' },
-  //   });
-  // }
   async createPost(
     dto: CreatePostDto,
     user: User,
@@ -331,66 +275,7 @@ export class PostService {
     }
   }
 
-  async getPostsCursor(
-    userId: string,
-    opts: { limit?: number; cursor?: string },
-  ) {
-    const limit = Math.min(50, opts.limit ?? 24);
-    const take = limit + 1; // fetch one extra to know if there's more
-
-    // parse cursor: expected format "ts|id" where ts is ISO and id is uuid
-    let cursorTs: string | undefined;
-    let cursorId: string | undefined;
-    if (opts.cursor) {
-      const parts = opts.cursor.split('|');
-      cursorTs = parts[0];
-      cursorId = parts[1];
-    }
-
-    const qb = this.postRepository
-      .createQueryBuilder('post')
-      .leftJoinAndSelect('post.media', 'media')
-      .where('post.ownerId = :userId', { userId })
-      .orderBy('post.createdAt', 'DESC')
-      .addOrderBy('post.id', 'DESC') // tie-breaker
-      .take(take);
-
-    if (cursorTs && cursorId) {
-      qb.andWhere(
-        new Brackets((qb2) => {
-          qb2
-            .where('post.createdAt < :cursorTs', { cursorTs })
-            .orWhere('post.createdAt = :cursorTs AND post.id < :cursorId', {
-              cursorTs,
-              cursorId,
-            });
-        }),
-      );
-    }
-
-    const posts = await qb.getMany();
-
-    // determine nextCursor
-    let nextCursor: string | null = null;
-    let pageItems = posts;
-    if (posts.length === take) {
-      const last = posts[posts.length - 1];
-      // remove the extra item
-      pageItems = posts.slice(0, posts.length - 1);
-      nextCursor = `${last.createdAt.toISOString()}|${last.id}`;
-    }
-
-    // map to lightweight preview
-    const previews = pageItems.map((p) => ({
-      id: p.id,
-      imageUrl: p.media && p.media.length ? p.media[0].url : null,
-      createdAt: p.createdAt,
-      likesCount: p.likesCount,
-      commentsCount: p.commentsCount,
-    }));
-
-    return { items: previews, nextCursor };
-  }
+  // place this method in your service, replacing the previous getPostsCursor
 
   async getAllPosts(userId: string, opts: { limit: number; page: number }) {
     const skip = (opts.page - 1) * opts.limit;
@@ -400,7 +285,8 @@ export class PostService {
       .where('post.ownerId = :userId', { userId }) // or join owner and filter by owner.id
       .orderBy('post.createdAt', 'DESC')
       .skip(skip)
-      .take(opts.limit);
+      .take(opts.limit)
+      .distinct(true);
 
     // left join media to get first image url (grouped)
     qb.leftJoinAndSelect('post.media', 'media');
@@ -421,11 +307,16 @@ export class PostService {
   }
 
   async getPost(postId: string) {
-    const post = this.postRepository.findOne({
+    const post = await this.postRepository.findOne({
       where: { id: postId },
       relations: ['owner', 'media', 'likedBy', 'comments'],
     });
     if (!post) throw new NotFoundException('Post not found');
+    const likes = await this.redis.get(`post:${postId}:likes`);
+    const comments = await this.redis.get(`post:${postId}:comments`);
+    post.likesCount = Number(likes ?? post.likesCount);
+    post.commentsCount = Number(comments ?? post.commentsCount);
+
     return post;
   }
 
@@ -532,17 +423,6 @@ export class PostService {
     } finally {
       await queryRunner.release();
     }
-
-    // // helper stubs used above (move these to MediaService in real code)
-    // function buildFinalPath(origName: string, userId: string, postId: string) {
-    //   const safeName = origName.replace(/\s+/g, '-').replace(/[^a-zA-Z0-9-_]/g, '');
-    //   const timestamp = Date.now();
-    //   const ext = path.extname(origName).toLowerCase();
-    //   return path.join(process.cwd(), 'uploads', `user-${userId}`, `post-${postId}`, 'original', `${safeName}-original-${timestamp}${ext}`);
-    // }
-    // function isVideoExt(ext: string) {
-    //   return ['.mp4','.mov','.mkv','.avi','.webm','.flv','.wmv','.m4v'].includes(ext);
-    // }
   }
 
   async deletePost(postId: string, currentUserId: string) {
@@ -601,28 +481,8 @@ export class PostService {
     }
   }
 
-  async getFeed(currentUserId: string, limit = 20, page = 1) {
-    return this.postRepository
-      .createQueryBuilder('post')
-      .innerJoin('post.owner', 'owner')
-      .innerJoin(
-        'user_follows',
-        'f',
-        'f.follower_id = :currentUserId AND f.followed_id = owner.id',
-        { currentUserId },
-      )
-      .leftJoinAndSelect('post.media', 'media')
-      .leftJoinAndSelect('post.owner', 'postOwner')
-      .leftJoinAndSelect('post.likedBy', 'likedBy')
-      .leftJoinAndSelect('post.comments', 'comments')
-      .orderBy('post.createdAt', 'DESC')
-      .take(limit)
-      .skip((page - 1) * limit)
-      .getMany();
-  }
-
-  // async getFeed(currentUserId: string, limit = 20, page = 1) {
-  //   return this.postRepository
+  // async getFeed(currentUserId: string, limit = 2, page = 1) {
+  //   const qb = this.postRepository
   //     .createQueryBuilder('post')
   //     .innerJoin('post.owner', 'owner')
   //     .innerJoin(
@@ -635,56 +495,92 @@ export class PostService {
   //     .leftJoinAndSelect('post.owner', 'postOwner')
   //     .leftJoinAndSelect('post.likedBy', 'likedBy')
   //     .leftJoinAndSelect('post.comments', 'comments')
-  //     .orderBy('post.createdAt', 'DESC')
-  //     .take(limit)
-  //     .skip((page - 1) * limit)
-  //     .getMany();
+  //     .addSelect('COUNT(*) OVER()', 'total_count')
+  //     .orderBy('post.createdAt', 'DESC');
+  //   // .take(limit)
+  //   // .skip((page - 1) * limit);
+
+  //   const { entities, raw } = await qb.getRawAndEntities(); // single DB roundtrip
+  //   return {
+  //     items: entities,
+  //     total: raw.length ? Number(raw[0].total_count) : 0,
+  //   };
   // }
 
-  // async getFeed(currentUserId: string, limit = 20, page = 1) {
-  //   return this.postRepository
-  //     .createQueryBuilder('post')
-  //     .innerJoin('post.owner', 'owner') // join the post's owner
-  //     .innerJoin(
-  //       // 'users_followers_users',
-  //       'user_follows',
-  //       'f',
-  //       // 'f."usersId_1" = :currentUserId AND f."usersId_2" = owner.id',
-  //       'f.follower_id = :currentUserId AND f.followed_id = owner.id',
-  //       { currentUserId },
-  //     )
-  //     .leftJoinAndSelect('post.media', 'media')
-  //     .leftJoinAndSelect('post.owner', 'postOwner')
-  //     .leftJoinAndSelect('post.likedBy', 'likedBy')
-  //     .leftJoinAndSelect('post.comments', 'comments')
-  //     .orderBy('post.createdAt', 'DESC')
-  //     .take(limit)
-  //     .skip((page - 1) * limit)
-  //     .getMany();
-  // }
+  async getFeed(currentUserId: string, limit = 2, page = 1) {
+    const qb = this.postRepository
+      .createQueryBuilder('post')
+      .innerJoin('post.owner', 'owner')
+      .innerJoin(
+        'user_follows',
+        'f',
+        'f.follower_id = :currentUserId AND f.followed_id = owner.id',
+        { currentUserId },
+      )
+      .leftJoinAndSelect('post.media', 'media')
+      .leftJoinAndSelect('post.owner', 'postOwner')
+      .leftJoinAndSelect('post.likedBy', 'likedBy')
+      .leftJoinAndSelect('post.comments', 'comments')
+      .orderBy('post.createdAt', 'DESC');
+
+    const total = await qb.getCount(); // full count without pagination
+
+    this.logger.log(total);
+    const items = await qb
+      .take(limit)
+      .skip((page - 1) * limit)
+      .getMany();
+
+    return { items, total };
+  }
 
   async toggleLike(postId: string, user: User) {
     const post = await this.postRepository.findOne({
       where: { id: postId },
-      relations: ['likedBy'],
+      relations: ['likedBy', 'owner'],
     });
     if (!post) throw new NotFoundException('Post not found');
+
+    const key = `post:${postId}:likes`;
 
     const alreadyLiked = post.likedBy.some((u) => u.id === user.id);
 
     if (alreadyLiked) {
       post.likedBy = post.likedBy.filter((u) => u.id !== user.id);
       --post.likesCount;
-    } else {
-      post.likedBy.push(user);
-      ++post.likesCount;
+      await this.postRepository.save(post);
+      await this.redis.decr(key);
+      return { liked: false };
     }
 
-    await this.postRepository.save(post);
+    // NEW like path — update DB + redis
+    post.likedBy.push(user);
+    ++post.likesCount;
+    const saved = await this.postRepository.save(post);
+    await this.redis.incr(key);
 
-    return {
-      liked: !alreadyLiked,
-    };
+    // Notify owner only if owner exists and is not the liker
+    const owner = post.owner;
+    if (owner && owner.id !== user.id) {
+      const ntf = await this.notificationService.createForUser(owner.id, {
+        type: 'like',
+        smallBody: `${user.username ?? 'Someone'} liked your post`,
+        payloadRef: { postId },
+        meta: {},
+        sourceId: postId,
+      });
+
+      const unread = await this.notificationService.countUnreadForUser(
+        owner.id,
+      );
+
+      // emit via SocketService (recommended) or SocketGateway
+      this.socketService.emitNotificationToUser(owner.id, ntf);
+      this.socketService.emitUnreadCount(owner.id, unread);
+      // or: this.socketGateway.emitNotificationToUser(owner.id, ntf);
+    }
+
+    return { liked: true, post: saved };
   }
 
   async getLikes(postId: string, page = 1, limit = 20) {

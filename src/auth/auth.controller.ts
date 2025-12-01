@@ -15,6 +15,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { Request, Response } from 'express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
+import { DEFAULT_REFRESH_MS } from 'src/common/constants';
 import { AuthenticatedRequest } from 'src/common/interfaces/user-request.interface';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
 import { AuthService } from './auth.service';
@@ -23,16 +24,29 @@ import { AuthService } from './auth.service';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  private cookieOptions(httpOnly: boolean, maxAge?: number) {
+    const secure = process.env.COOKIE_SECURE === 'true';
+    const sameSite = secure ? ('none' as const) : ('lax' as const);
+    const opts: any = {
+      httpOnly,
+      secure,
+      sameSite,
+      path: '/',
+    };
+    if (typeof maxAge === 'number') opts.maxAge = maxAge;
+    return opts;
+  }
+
   @Post('signup')
   @UseInterceptors(
     FileInterceptor('avatar', {
       storage: diskStorage({
         destination: './uploads/avatars',
-        filename: (req, file, cb) => {
-          const uniqueSuffix =
-            Date.now() + '-' + Math.round(Math.random() * 1e9);
-          cb(null, `${uniqueSuffix}${extname(file.originalname)}`);
-        },
+        filename: (req, file, cb) =>
+          cb(
+            null,
+            `${Date.now()}-${Math.round(Math.random() * 1e9)}${extname(file.originalname)}`,
+          ),
       }),
     }),
   )
@@ -44,25 +58,19 @@ export class AuthController {
     const avatarUrl = avatar
       ? `/uploads/avatars/${avatar.filename}`
       : undefined;
-    const token = await this.authService.signUp({
+    const { access_token, refresh_token } = await this.authService.signUp({
       ...createUserDto,
       avatarUrl,
     });
-
-    res.cookie('jwt', token.access_token, {
-      httpOnly: true,
-      secure: false,
-      sameSite: 'lax',
-      maxAge: 1000 * 60 * 60, // 1 hour
-    });
-
-    return { message: 'Signup successful', token };
-  }
-
-  @Post('logout')
-  logout(@Res({ passthrough: true }) res: Response) {
-    res.clearCookie('jwt');
-    return { message: 'Logged out' };
+    const raw = process.env.REFRESH_TTL_MS;
+    const refreshTtlMs =
+      raw && /^\d+$/.test(raw) ? parseInt(raw, 10) : DEFAULT_REFRESH_MS;
+    res.cookie(
+      'refresh',
+      refresh_token,
+      this.cookieOptions(true, refreshTtlMs),
+    );
+    return { access_token };
   }
 
   @Post('signin')
@@ -70,52 +78,94 @@ export class AuthController {
     @Body() { email, password }: { email: string; password: string },
     @Res({ passthrough: true }) res: Response,
   ) {
-    const token = await this.authService.signIn(email, password);
-    console.log('signin authCTRL!!!!');
-    console.log(token);
+    const { access_token, refresh_token } = await this.authService.signIn(
+      email,
+      password,
+    );
+    const raw = process.env.REFRESH_TTL_MS;
+    const refreshTtlMs =
+      raw && /^\d+$/.test(raw) ? parseInt(raw, 10) : DEFAULT_REFRESH_MS;
 
-    res.cookie('jwt', token.access_token, {
-      httpOnly: true,
-      secure: false, // only over HTTPS
-      sameSite: 'lax',
-      maxAge: 1000 * 60 * 60, // 1 hour
-    });
+    res.cookie(
+      'refresh',
+      refresh_token,
+      this.cookieOptions(true, refreshTtlMs),
+    );
+    return { access_token };
+  }
 
-    return { message: 'Logged in successfully', token };
+  @Post('refresh')
+  async refresh(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const refreshJwt = req.cookies?.refresh;
+    if (!refreshJwt) throw new UnauthorizedException('No refresh token');
+    const { access_token, refresh_token } =
+      await this.authService.refresh(refreshJwt);
+    const raw = process.env.REFRESH_TTL_MS;
+    const refreshTtlMs =
+      raw && /^\d+$/.test(raw) ? parseInt(raw, 10) : DEFAULT_REFRESH_MS;
+
+    res.cookie(
+      'refresh',
+      refresh_token,
+      this.cookieOptions(true, refreshTtlMs),
+    );
+    return { access_token };
+  }
+
+  @Post('logout')
+  logout(@Res({ passthrough: true }) res: Response) {
+    res.clearCookie('refresh', { path: '/' });
+    return { message: 'Logged out' };
   }
 
   @Get('google')
   @UseGuards(AuthGuard('google'))
-  async googleAuth(@Req() req: Request) {
-    // Initiates the Google OAuth2 login flow
-  }
+  async googleAuth() {}
 
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
   async googleAuthRedirect(
     @Req() req: AuthenticatedRequest,
-    @Res() // { passthrough: true }
-    res: Response,
+    @Res() res: Response,
   ) {
     const user = req.user;
-    if (!user) throw new UnauthorizedException('user not found!');
 
-    // Use AuthService to generate JWT
-    const token = this.authService.generateToken(user.id, user.email);
+    if (!user) {
+      console.warn('googleAuthRedirect: no user on request', {
+        query: req.query,
+      });
+      throw new UnauthorizedException('user not found from provider');
+    }
 
-    // Return or redirect with token
-    // return { token };
-    res.cookie('jwt', token.access_token, {
-      httpOnly: true,
-      secure: false,
-      // sameSite: 'strict',
-      sameSite: 'lax',
-      maxAge: 1000 * 60 * 60,
-    });
+    let tokens;
+    try {
+      tokens = await this.authService.handleProviderLogin(user);
+    } catch (err) {
+      console.error('googleAuthRedirect: handleProviderLogin failed', {
+        message: err?.message ?? err,
+      });
+      throw new UnauthorizedException('failed to process provider login');
+    }
 
-    // res.redirect('http://localhost:3000/users/me');
-    res.redirect(`http://localhost:3001/auth/callback?token=${token}`);
-    // res.send('Cookie set. You are logged in!');
-    // return { message: 'Google login successful' };
+    const { access_token, refresh_token } = tokens;
+
+    const raw = process.env.REFRESH_TTL_MS;
+    const refreshTtlMs =
+      raw && /^\d+$/.test(raw) ? parseInt(raw, 10) : DEFAULT_REFRESH_MS;
+
+    res.cookie(
+      'refresh',
+      refresh_token,
+      this.cookieOptions(true, refreshTtlMs),
+    );
+    const redirectBase =
+      process.env.CLIENT_OAUTH_REDIRECT ||
+      'http://localhost:3001/auth/callback';
+    const redirectUrl = `${redirectBase}?access=${encodeURIComponent(access_token)}`;
+
+    return res.redirect(redirectUrl);
   }
 }

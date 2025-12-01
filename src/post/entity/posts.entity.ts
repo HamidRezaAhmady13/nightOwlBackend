@@ -5,6 +5,7 @@ import {
   CreateDateColumn,
   Entity,
   Index,
+  JoinColumn,
   JoinTable,
   ManyToMany,
   ManyToOne,
@@ -22,15 +23,16 @@ export class Post {
   content: string; // text content of post
 
   @ManyToOne(() => User, (user) => user.posts)
+  @JoinColumn({ name: 'ownerId' })
   @Index()
   owner: User;
 
-  @OneToMany(() => Media, (media) => media.post)
-  media: Media[];
-
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   @Index()
   createdAt: Date;
+
+  @OneToMany(() => Media, (media) => media.post)
+  media: Media[];
 
   @OneToMany(() => Comment, (comment) => comment.post)
   comments: Comment[];

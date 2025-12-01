@@ -4,6 +4,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   JoinTable,
   ManyToMany,
   ManyToOne,
@@ -25,9 +26,11 @@ export class Comment {
   })
   author: User;
 
+  @Index()
   @ManyToOne(() => Post, (post) => post.comments, { onDelete: 'CASCADE' })
   post: Post;
 
+  @Index()
   @ManyToOne(() => Comment, (comment) => comment.childComments, {
     nullable: true,
     onDelete: 'CASCADE',
@@ -39,6 +42,7 @@ export class Comment {
   })
   childComments: Comment[];
 
+  @Index()
   @CreateDateColumn()
   createdAt: Date;
 

@@ -26,8 +26,8 @@ export class User {
   @Column({ unique: true })
   email: string;
 
-  @Column()
-  password: string; // hashed
+  @Column({ type: 'varchar', nullable: true, select: false })
+  password?: string | null; // hashed
 
   @Column({
     type: 'varchar',
@@ -111,4 +111,19 @@ export class User {
 
   @Column({ default: 0 })
   followingsCount: number;
+
+  @Column({ default: 0 })
+  unreadCount: number;
+
+  @Column({ default: 0 })
+  notifEmittedCount: number;
+
+  @Column({ default: 0 })
+  notifDeliveredCount: number;
+
+  @Column({ default: 0 })
+  notifReadCount: number;
+
+  @Column({ default: 0 })
+  notifFailedCount: number;
 }

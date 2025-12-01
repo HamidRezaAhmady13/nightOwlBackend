@@ -3,11 +3,8 @@ import * as cookieParser from 'cookie-parser';
 import { AppModule } from './app/app.module';
 import { HttpExceptionFilter } from './http-exception/http-exception.filter';
 
-//
 import { ValidationPipe } from '@nestjs/common';
 import * as express from 'express';
-
-//
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -23,14 +20,8 @@ async function bootstrap() {
       stopAtFirstError: true,
     }),
   );
-  // app.use(
-  //   '/uploads',
-  //   express.static(path.join(process.cwd(), 'uploads'), {
-  //     setHeaders: (res) => {
-  //       res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-  //       res.setHeader('Access-Control-Allow-Origin', '*');
-  //     },
-  //   }),
+  // app.useGlobalInterceptors(
+  //   new CacheInterceptor(app.get('CACHE_MANAGER'), new Reflector()),
   // );
   expressApp.use(express.json({ limit: '140mb' }));
   expressApp.use(express.urlencoded({ extended: true, limit: '140mb' }));
@@ -38,23 +29,10 @@ async function bootstrap() {
     origin: ['http://localhost:3001', 'http://localhost:5173'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
   });
 
   await app.listen(process.env.PORT ?? 3000);
 }
 
 bootstrap();
-// async function bootstrap() {
-//   const app = await NestFactory.createMicroservice(AppModule, {
-//     transport: Transport.GRPC,
-//     options: {
-//       package: 'greeter',
-//       protoPath: path.resolve(__dirname, '../../proto/greeter.proto'),
-//     },
-//   });
-
-//   await app.listen().then(() => {
-//     console.log('🚀 gRPC microservice is running');
-//   });
-// }

@@ -1,0 +1,124 @@
+ ----API ARCH...---
+🔹 Auth
+http
+POST    /auth/signup
+POST    /auth/signin
+GET     /auth/me
+🔹 Users
+http
+GET     /users/:id
+PATCH   /users/:id
+DELETE  /users/:id
+GET     /users/:id/friends
+POST    /users/:id/follow
+POST    /users/:id/unfollow
+🔹 Posts
+http
+GET     /posts
+POST    /posts
+GET     /posts/:id
+PATCH   /posts/:id
+DELETE  /posts/:id
+POST    /posts/:id/like
+POST    /posts/:id/comment
+🔹 Media Uploads
+http
+POST    /media/upload
+GET     /media/:id/stream 
+🔹 Notifications
+http
+GET     /notifications
+POST    /notifications/read
+
+ 
+
+
+ --------------notifications---------------
+
+
+ 1.Event sources: app actions (like/comment/follow) → backend API or worker emits notification events.
+
+2.Persistence: Notifications DB table (your Entity) stores canonical records (id, userId, type, .payloadRef, meta, status, timestamps).
+
+3.Fan-out layer: synchronous for small scale; queue + worker for large-scale creators to persist then push.
+
+4.Delivery channels: socket rooms (user:{id}), optional push/email adapters, and the notifications API.
+
+5.Client apps: SocketProvider receives events, shows toast, and inserts into react-query notifications cache; Notification Center reads paginated API.
+
+6.Consistency loop: persist → emit socket → client optimistic insert → server-confirmed state on fetch/invalidate.
+
+7.Read / ack flow: client marks read via PATCH; server updates readAt and broadcasts decrement to badges/unread counters.
+
+8.Idempotency and dedupe: use notification.id / sourceId to avoid duplicates across retries and fan-out.
+
+9.Monitoring and backpressure: queue metrics, retry policies, DLQ for failed deliveries, and rate limits.
+
+10.Privacy and filtering: evaluate user prefs before persist/emit (blocks, mutes, DND).
+ --------------notifications---------------
+
+ --------------notifications toplogy---------------
+
+1. u mean in ctrl of relevant action we embed a method provided by socket service?
+
+2. persistence on DB its comprehendible! 
+
+3. fan out if worker for large scale !
+
+4.hitting gateway!
+
+5.front connects to gateway? 
+
+6.checking status of ntf???! was unclear for me! 
+
+7.if ntf was unseen or unread we emit a read event!? to change the seen prop on DB?
+
+8.checking again for not being duplicated?
+
+9. Queue metrics & retry policy (short): track queue length, processing latency, failure rate; retry with exponential backoff and capped attempts, move to DLQ after max attempts and alert on spikes.
+
+10.extra user checks for mute and blocks and blah this one was clear !
+ --------------notifications toplogy---------------
+
+
+
+ --------------notifications service---------------
+
+ 1.Define DTOs and events: Create CreateNotificationDto, MarkReadDto, NotificationPayload, and socket event shape.
+
+2.Service surface: add methods createForUser(actor, target, type, meta), persist(notification), emit(notification), markRead(id, userId), list(userId, cursor, limit).
+
+3.Controller endpoints: POST /notifications (internal), GET /notifications, PATCH /notifications/:id/read, PATCH /notifications/mark-all-read.
+
+4.Persist-first flow: controller -> NotificationService.createForUser -> save row (status=pending) -> enqueue for delivery.
+
+5.Worker job: dequeue notification(s) -> call gateway.emitToRoom(user:${userId}, "notification", payload) -> set deliveredAt/status.
+
+6.Socket gateway: on auth join user:{id} room; accept ack events to mark read or open.
+
+7.Idempotency & dedupe: use notification.id and optional sourceId; worker checks delivered flag before emit.
+
+8.Metrics & retries: record queue length, failures; retry with exponential backoff, move to DLQ after N attempts.
+ --------------notifications service---------------
+
+ ====================tonite ntf and bull
+ 
+ Add BullModule.registerQueue({ name: 'notifications' }) to NotificationModule.
+
+Inject Queue with @InjectQueue('notifications') in NotificationService and queue.add('deliver', { id }, { attempts: 5, backoff: { type: 'exponential', delay: 1000 } }).
+
+Implement NotificationsProcessor@Process('deliver') that calls NotificationService.deliver(job.data.id).
+
+Ensure NotificationRepository is injected (TypeORM) in the same module so deliver can update deliveredAt/status.
+
+While wiring Bull, also add a simple SocketGateway stub (emitToUser) so deliver can call it — keeps the loop testable.
+
+After that, write a quick integration test: createForUser -> queue job created -> processor processes -> repo shows deliveredAt.
+ 
+ 
+ ====================
+
+
+
+
+

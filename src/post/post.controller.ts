@@ -1,11 +1,14 @@
 import {
   Body,
   Controller,
+  DefaultValuePipe,
   Get,
   NotFoundException,
   Param,
+  ParseIntPipe,
   Post,
   Query,
+  UnauthorizedException,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -60,14 +63,18 @@ export class PostController {
   }
 
   @Get('feed')
-  async getFeed(@CurrentUser() user: User) {
-    return this.postService.getFeed(user.id);
+  async getFeed(
+    @CurrentUser() user: { id?: string; userId?: string },
+    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+  ) {
+    const id = user.id ?? user.userId;
+    if (!id)
+      throw new UnauthorizedException(
+        'no user is found with that id for fecthing feed',
+      );
+    return this.postService.getFeed(id, limit, page);
   }
-
-  // @Get()
-  // async getAllPosts(@CurrentUser() user: User) {
-  //   return this.postService.getAllPosts(user.id);
-  // }
 
   @Get()
   getPostsCursor(
@@ -86,7 +93,7 @@ export class PostController {
   @Get(':id')
   async getPostById(@Param('id') id: string) {
     const post = await this.postService.getPost(id);
-    console.log(id);
+    // console.log(id);
 
     if (!post) throw new NotFoundException('Post not found');
     return post;
