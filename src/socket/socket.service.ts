@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
+import { LineLogger } from 'src/common/utils/lineLogger';
 
 @Injectable()
 export class SocketService {
@@ -10,6 +11,9 @@ export class SocketService {
   }
 
   async emitToUser(userId: string, event: string, payload: any) {
+    const logger = new LineLogger('emitToUser');
+    logger.log(`Emitting notification to user:${userId}`, payload);
+
     this.server.to(`user:${userId}`).emit(event, payload);
   }
 

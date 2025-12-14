@@ -14,6 +14,7 @@ import * as path from 'path';
 import { extractQualityFromFilename } from 'src/common/utils/extractQualityFromFilename';
 import { toUrlPath } from 'src/common/utils/toUrlPth';
 import { MediaService } from 'src/media/media.service';
+import { NotificationType } from 'src/notifications/dto/ntfDto';
 import { NotificationService } from 'src/notifications/notification.service';
 import { RedisService } from 'src/redis/redis.service';
 import { SocketService } from 'src/socket/socket.service';
@@ -481,32 +482,6 @@ export class PostService {
     }
   }
 
-  // async getFeed(currentUserId: string, limit = 2, page = 1) {
-  //   const qb = this.postRepository
-  //     .createQueryBuilder('post')
-  //     .innerJoin('post.owner', 'owner')
-  //     .innerJoin(
-  //       'user_follows',
-  //       'f',
-  //       'f.follower_id = :currentUserId AND f.followed_id = owner.id',
-  //       { currentUserId },
-  //     )
-  //     .leftJoinAndSelect('post.media', 'media')
-  //     .leftJoinAndSelect('post.owner', 'postOwner')
-  //     .leftJoinAndSelect('post.likedBy', 'likedBy')
-  //     .leftJoinAndSelect('post.comments', 'comments')
-  //     .addSelect('COUNT(*) OVER()', 'total_count')
-  //     .orderBy('post.createdAt', 'DESC');
-  //   // .take(limit)
-  //   // .skip((page - 1) * limit);
-
-  //   const { entities, raw } = await qb.getRawAndEntities(); // single DB roundtrip
-  //   return {
-  //     items: entities,
-  //     total: raw.length ? Number(raw[0].total_count) : 0,
-  //   };
-  // }
-
   async getFeed(currentUserId: string, limit = 2, page = 1) {
     const qb = this.postRepository
       .createQueryBuilder('post')
@@ -525,7 +500,6 @@ export class PostService {
 
     const total = await qb.getCount(); // full count without pagination
 
-    this.logger.log(total);
     const items = await qb
       .take(limit)
       .skip((page - 1) * limit)
@@ -563,11 +537,14 @@ export class PostService {
     const owner = post.owner;
     if (owner && owner.id !== user.id) {
       const ntf = await this.notificationService.createForUser(owner.id, {
-        type: 'like',
-        smallBody: `${user.username ?? 'Someone'} liked your post`,
-        payloadRef: { postId },
+        type: NotificationType.Like,
+        sourceId: user.id,
+        postId: postId,
         meta: {},
-        sourceId: postId,
+        // smallBody: `${user.username ?? 'Someone'} liked your post`,
+        // payloadRef: { postId },
+        // meta: {},
+        // sourceId: postId,
       });
 
       const unread = await this.notificationService.countUnreadForUser(

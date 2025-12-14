@@ -8,7 +8,7 @@ const cookieExtractor: JwtFromRequestFunction = (req: any) =>
   req?.cookies?.access || null;
 
 @Injectable()
-export class JwtStrategy extends PassportStrategy(Strategy) {
+export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   constructor(
     private readonly revocation: RevocationService,
     private readonly config: ConfigService,

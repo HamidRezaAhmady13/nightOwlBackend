@@ -14,6 +14,7 @@ import { RefreshTokenService } from './refresh-token.service';
 import { RevocationService } from './revocation.service';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { JwtRefreshStrategy } from './strategies/jwtRefreshStrategy';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     JwtStrategy,
     RevocationService,
     RefreshTokenService,
+    JwtRefreshStrategy,
   ],
   exports: [AuthService, RevocationService, RefreshTokenService],
 })

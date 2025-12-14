@@ -4,6 +4,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { LineLogger } from 'src/common/utils/lineLogger';
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
@@ -20,6 +21,8 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
         ? authHeader.replace(/^Bearer\s+/i, '')
         : accessCookie;
       if (tokenVal) {
+        // Log the token being checked for debugging
+
         const prefix = tokenVal.slice(0, 10);
         const key = `tok:${prefix}`;
         const now = Date.now();
@@ -37,24 +40,47 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     const key = infoMsg;
     const now = Date.now();
     const last = JwtAuthGuard.lastLog.get(key) ?? 0;
+    const logger = new LineLogger('handleRequest');
 
+    // logger.log(infoMsg);
     if (!user) {
-      if (now - last > 10_000) {
-        console.warn('JwtAuthGuard: no user', {
-          info: infoMsg,
-          err: err ? (err.message ?? String(err)) : null,
-        });
-        JwtAuthGuard.lastLog.set(key, now);
+      let customMsg = infoMsg;
+      if (infoMsg === 'jwt expired') {
+        customMsg = 'ACCESS_TOKEN_EXPIRED'; // or any string you want
+      } else if (infoMsg === 'invalid signature') {
+        customMsg = 'ACCESS_TOKEN_INVALID';
       }
 
-      // THROW here so Nest returns 401 and your client interceptor can trigger refresh
-      throw new UnauthorizedException(infoMsg);
+      logger.warn('JwtAuthGuard: no user', {
+        info: infoMsg,
+        err: err ? (err.message ?? String(err)) : null,
+      });
+      // logger.log(customMsg);
+      // console.warn('JwtAuthGuard triggered' , infoMsg);
+
+      throw new UnauthorizedException(customMsg);
     }
 
     if (now - (JwtAuthGuard.lastLog.get('success') ?? 0) > 60_000) {
       JwtAuthGuard.lastLog.set('success', now);
     }
 
+    return user;
+  }
+}
+
+@Injectable()
+export class JwtRefreshGuard extends AuthGuard('jwt-refresh') {
+  handleRequest(err, user, info) {
+    if (!user) {
+      if (info?.message === 'jwt expired') {
+        throw new UnauthorizedException('REFRESH_TOKEN_EXPIRED');
+      }
+      if (info?.message === 'No auth token') {
+        throw new UnauthorizedException('NO_REFRESH_TOKEN');
+      }
+      throw new UnauthorizedException('REFRESH_TOKEN_INVALID');
+    }
     return user;
   }
 }

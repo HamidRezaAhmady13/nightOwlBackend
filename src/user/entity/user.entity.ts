@@ -11,6 +11,7 @@ import {
 } from 'typeorm';
 
 import { Comment } from 'src/comment/entity/comment.entity';
+import { NotificationEntity } from 'src/notifications/entity/notification.entity';
 import { Media } from 'src/post/entity/media.entity';
 import { Post } from 'src/post/entity/posts.entity';
 
@@ -126,4 +127,7 @@ export class User {
 
   @Column({ default: 0 })
   notifFailedCount: number;
+
+  @OneToMany(() => NotificationEntity, (ntf) => ntf.sourceUser)
+  notifications: NotificationEntity[];
 }

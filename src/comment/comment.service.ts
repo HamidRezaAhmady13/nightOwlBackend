@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { NotificationType } from 'src/notifications/dto/ntfDto';
 import { NotificationService } from 'src/notifications/notification.service';
 import { Post } from 'src/post/entity/posts.entity';
 import { RedisService } from 'src/redis/redis.service';
@@ -65,11 +66,16 @@ export class CommentService {
 
     if (post.owner && post.owner.id && post.owner.id !== author.id) {
       const ntf = await this.notificationService.createForUser(post.owner.id, {
-        type: 'comment',
-        smallBody: `${author.username} commented on your post`,
-        payloadRef: { postId, commentId: savedComment.id },
+        type: NotificationType.Comment,
+
+        sourceId: author.id,
+        postId: postId,
+        commentId: savedComment.id,
         meta: {},
-        sourceId: savedComment.id,
+        // smallBody: `${author.username} commented on your post`,
+        // payloadRef: { postId, commentId: savedComment.id },
+        // meta: {},
+        // sourceId: savedComment.id,
       });
 
       const unread = await this.notificationService.countUnreadForUser(
@@ -183,11 +189,13 @@ export class CommentService {
     console.log(comment);
     if (owner && owner.id !== userId) {
       const ntf = await this.notificationService.createForUser(owner.id, {
-        type: 'like',
-        smallBody: `${user.username ?? 'Someone'} liked your comment`,
-        payloadRef: { commentId, postId: comment.post?.id },
+        type: NotificationType.Like,
+        sourceId: user.id,
+        postId: comment.post?.id,
+        // smallBody: `${user.username ?? 'Someone'} liked your comment`,
+        // payloadRef: { commentId, postId: comment.post?.id },
         meta: {},
-        sourceId: commentId,
+        // sourceId: commentId,
       });
 
       const unread = await this.notificationService.countUnreadForUser(

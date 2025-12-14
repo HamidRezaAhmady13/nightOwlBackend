@@ -11,7 +11,7 @@ import Redis, { RedisOptions } from 'ioredis';
 @Injectable()
 export class RedisService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(RedisService.name);
-  private client!: Redis;
+  public client!: Redis; // <-- change from private to public
 
   constructor(private readonly config: ConfigService) {}
 
@@ -50,6 +50,10 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     return ttlSeconds
       ? this.client.set(key, value, 'EX', ttlSeconds)
       : this.client.set(key, value);
+  }
+
+  async psetex(key: string, ttlMs: number, value: string) {
+    return this.client.psetex(key, ttlMs, value);
   }
 
   async get(key: string) {

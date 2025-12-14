@@ -2,9 +2,14 @@ import { InjectQueue } from '@nestjs/bull';
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Queue } from 'bull';
+import { buildNotification } from 'src/common/utils/buildNotification';
 import { SocketService } from 'src/socket/socket.service';
 import { DeepPartial, IsNull, Repository } from 'typeorm';
-import { CreateNotificationDto, FeedPage } from './dto/ntfDto';
+import {
+  CreateNotificationWithtypesDto,
+  FeedPage,
+  NotificationType,
+} from './dto/ntfDto';
 import { NotificationEntity } from './entity/notification.entity';
 
 @Injectable()
@@ -17,24 +22,63 @@ export class NotificationService {
   ) {}
   private readonly logger = new Logger(NotificationService.name);
 
-  // notification.service.ts
-  async createForUser(userId: string, dto: CreateNotificationDto) {
+  async createForUser(userId: string, dto: CreateNotificationWithtypesDto) {
+    const built = buildNotification(dto);
+
+    let existing: NotificationEntity | null = null;
+
+    if (dto.type === NotificationType.Follow) {
+      existing = await this.repo.findOne({
+        where: {
+          userId,
+          sourceId: dto.sourceId,
+          type: NotificationType.Follow,
+        },
+      });
+    } else if (dto.type === NotificationType.Like) {
+      const postId = built.payloadRef?.postId;
+      if (postId) {
+        existing = await this.repo
+          .createQueryBuilder('n')
+          .where('"n"."userId" = :userId', { userId })
+          .andWhere('"n"."sourceId" = :sourceId', { sourceId: dto.sourceId })
+          .andWhere('"n"."type" = :type', { type: NotificationType.Like })
+          .andWhere(`"n"."payloadRef"->>'postId' = :postId`, { postId })
+          .getOne();
+      }
+    }
+
+    if (existing) {
+      existing.createdAt = new Date();
+      existing.status = 'pending';
+      const refreshed = await this.repo.save(existing);
+      await this.queue.add(
+        'deliver',
+        { id: refreshed.id },
+        { attempts: 5, backoff: { type: 'exponential', delay: 1000 } },
+      );
+      return refreshed;
+    }
+
     const payload: DeepPartial<NotificationEntity> = {
       userId,
       type: dto.type,
-      smallBody: dto.smallBody,
-      payloadRef: dto.payloadRef ?? null,
+      smallBody: built.smallBody,
+      payloadRef: built.payloadRef ?? null,
       meta: dto.meta ?? null,
       sourceId: dto.sourceId ?? null,
       status: 'pending',
     };
+
     const ntf = this.repo.create(payload);
     const saved = await this.repo.save(ntf);
+
     await this.queue.add(
       'deliver',
       { id: saved.id },
       { attempts: 5, backoff: { type: 'exponential', delay: 1000 } },
     );
+
     return saved;
   }
 
@@ -51,20 +95,37 @@ export class NotificationService {
   ): Promise<FeedPage<NotificationEntity>> {
     const qb = this.repo
       .createQueryBuilder('n')
+      .leftJoinAndSelect('n.sourceUser', 'u')
       .where('n.userId = :userId', { userId })
+      .orderBy('n.readAt', 'ASC')
       .orderBy('n.createdAt', 'DESC')
       .take(limit + 1);
     if (cursor) qb.andWhere('n.createdAt < :cursor', { cursor });
     const items = await qb.getMany();
     const hasMore = items.length > limit;
     const pageItems = hasMore ? items.slice(0, -1) : items;
+    const total = await this.repo.count({ where: { userId } });
+
     return {
       items: pageItems,
-      total: pageItems.length,
+      total,
       cursor: hasMore
         ? pageItems[pageItems.length - 1].createdAt.toISOString()
         : undefined,
     };
+  }
+
+  async markManyRead(userId: string, ids: string[]): Promise<number> {
+    const result = await this.repo
+      .createQueryBuilder()
+      .update(NotificationEntity)
+      .set({ readAt: () => 'CURRENT_TIMESTAMP' })
+      .where('userId = :userId', { userId })
+      .andWhere('id IN (:...ids)', { ids })
+      .andWhere('readAt IS NULL') // only mark unread
+      .execute();
+
+    return result.affected ?? 0;
   }
 
   async markRead(userId: string, notificationId: string) {

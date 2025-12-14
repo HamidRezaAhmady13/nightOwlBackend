@@ -4,7 +4,9 @@ import * as bcrypt from 'bcrypt';
 import { DataSource, Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
 
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
+import { LineLogger } from 'src/common/utils/lineLogger';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
 import { UserService } from 'src/user/user.service';
 import { RefreshToken } from './entity/refresh-token.entity';
@@ -17,23 +19,35 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private revocation: RevocationService,
     private readonly dataSource: DataSource,
+    private readonly config: ConfigService,
     @InjectRepository(RefreshToken) private rtRepo: Repository<RefreshToken>,
   ) {}
+  logger = new LineLogger('AuthService');
 
   private async createTokens(userId: string | number) {
-    console.log('createTokens');
-
     const refreshJti = uuidv4();
-    const ttlMs = Number(process.env.REFRESH_TTL_MS || 30 * 24 * 3600 * 1000);
+    const payload = { sub: userId, jti: refreshJti };
+
+    const refresh_token = await this.jwtService.signAsync(payload, {
+      secret: this.config.get<string>('JWT_REFRESH_SECRET'),
+      expiresIn: this.config.get<string>('REFRESH_TTL_MS') || '30d',
+    });
+
+    // Decode the JWT to get exp/iat
+    const decoded: any = this.jwtService.decode(refresh_token);
+    const now = Math.floor(Date.now() / 1000);
+    const exp = decoded?.exp;
+    const iat = decoded?.iat ?? now;
+    const ttlMs = exp && iat ? (exp - iat) * 1000 : 30 * 24 * 3600 * 1000;
+
     await this.revocation.set(refreshJti, String(userId), ttlMs);
 
     const access_token = await this.jwtService.signAsync(
       { sub: userId },
-      { expiresIn: process.env.ACCESS_TTL || '10s' },
-    );
-    const refresh_token = await this.jwtService.signAsync(
-      { sub: userId, jti: refreshJti },
-      { expiresIn: process.env.REFRESH_TTL || '30d' },
+      {
+        secret: this.config.get<string>('JWT_SECRET'),
+        expiresIn: this.config.get<string>('ACCESS_TTL_MS') || '10s',
+      },
     );
 
     return { access_token, refresh_token, refreshJti, ttlMs };
@@ -50,7 +64,6 @@ export class AuthService {
   }
 
   async signIn(email: string, password: string) {
-    console.log('signIn');
     const user = await this.userService.findByEmailWithPassword(email);
     if (!user || !user.password)
       throw new UnauthorizedException('Invalid credentials');
@@ -79,7 +92,7 @@ export class AuthService {
   }
 
   async verifyJwt(token: string) {
-    console.log('verifyJwt');
+    this.logger.log('verifyJwt');
     const payload = await this.jwtService.verifyAsync(token).catch(() => null);
     if (!payload) return null;
     if (payload.jti && (await this.revocation.isRevoked(payload.jti)))
@@ -88,7 +101,7 @@ export class AuthService {
   }
 
   public async generateToken(userId: string | number, email: string) {
-    console.log('generateToken');
+    const logger = new LineLogger('generateToken');
     const access_token = await this.jwtService.signAsync(
       { sub: userId, email },
       { expiresIn: '15m' },
@@ -97,31 +110,55 @@ export class AuthService {
   }
 
   async refresh(refreshJwt: string) {
-    console.log('refresh!!!!');
     let payload: any;
+
     try {
       payload = this.jwtService.verify(refreshJwt, {
-        secret: process.env.JWT_SECRET,
+        secret: this.config.get<string>('JWT_REFRESH_SECRET'),
       });
     } catch {
-      throw new UnauthorizedException(
-        'Invalid refresh token by backend u need to log in again',
-      );
+      throw new UnauthorizedException('ACCESS_TOKEN_EXPIRED');
     }
+    new LineLogger('refresh').log('payload', payload);
     const oldJti = payload.jti;
     const userId = payload.sub;
     if (!oldJti || !userId)
       throw new UnauthorizedException('Invalid token payload');
-    const ttlMs = Number(process.env.REFRESH_TTL_MS || 30 * 24 * 3600 * 1000);
-    const newJti = await this.revocation.rotate(oldJti, String(userId), ttlMs);
+
+    // Use exp from payload for TTL
+    const now = Math.floor(Date.now() / 1000);
+    const exp = payload.exp;
+    const ttlMs = exp && exp > now ? (exp - now) * 1000 : 30 * 24 * 3600 * 1000;
+
+    // IMPORTANT: Only rotate if the oldJti exists in Redis
+    // If not, try to fallback to the latest valid JTI for this user (optional)
+    let newJti: string;
+    try {
+      newJti = await this.revocation.rotate(oldJti, String(userId), ttlMs);
+    } catch (err) {
+      // If rotation fails, check if the refresh token is already rotated and use the latest one
+      // This fallback is optional and can be removed if strict rotation is required
+      new LineLogger('refresh').error(
+        'Rotation failed, fallback to latest',
+        err?.message ?? String(err),
+      );
+      throw new UnauthorizedException('REFRESH_TOKEN_EXPIRED');
+    }
+
     const access_token = await this.jwtService.signAsync(
       { sub: userId },
-      { expiresIn: process.env.ACCESS_TTL || '10s' },
+      {
+        secret: this.config.get<string>('JWT_SECRET'),
+        expiresIn: process.env.ACCESS_TTL || '10s',
+      },
     );
     const refresh_token = await this.jwtService.signAsync(
       { sub: userId, jti: newJti },
-      { expiresIn: process.env.REFRESH_TTL || '30d' },
+      {
+        secret: this.config.get<string>('JWT_REFRESH_SECRET'),
+        expiresIn: process.env.REFRESH_TTL || '30d',
+      },
     );
-    return { access_token, refresh_token };
+    return { access_token, refresh_token, refreshJti: newJti };
   }
 }

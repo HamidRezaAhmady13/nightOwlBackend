@@ -19,6 +19,7 @@ import { DEFAULT_REFRESH_MS } from 'src/common/constants';
 import { AuthenticatedRequest } from 'src/common/interfaces/user-request.interface';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
 import { AuthService } from './auth.service';
+import { JwtRefreshGuard } from './guards/jwt-auth.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -62,9 +63,8 @@ export class AuthController {
       ...createUserDto,
       avatarUrl,
     });
-    const raw = process.env.REFRESH_TTL_MS;
-    const refreshTtlMs =
-      raw && /^\d+$/.test(raw) ? parseInt(raw, 10) : DEFAULT_REFRESH_MS;
+    const raw = process.env.REFRESH_TTL_MS ?? '';
+    const refreshTtlMs = /^\d+$/.test(raw) ? Number(raw) : DEFAULT_REFRESH_MS;
     res.cookie(
       'refresh',
       refresh_token,
@@ -82,9 +82,8 @@ export class AuthController {
       email,
       password,
     );
-    const raw = process.env.REFRESH_TTL_MS;
-    const refreshTtlMs =
-      raw && /^\d+$/.test(raw) ? parseInt(raw, 10) : DEFAULT_REFRESH_MS;
+    const raw = process.env.REFRESH_TTL_MS ?? '';
+    const refreshTtlMs = /^\d+$/.test(raw) ? Number(raw) : DEFAULT_REFRESH_MS;
 
     res.cookie(
       'refresh',
@@ -94,6 +93,7 @@ export class AuthController {
     return { access_token };
   }
 
+  @UseGuards(JwtRefreshGuard)
   @Post('refresh')
   async refresh(
     @Req() req: Request,
@@ -101,18 +101,23 @@ export class AuthController {
   ) {
     const refreshJwt = req.cookies?.refresh;
     if (!refreshJwt) throw new UnauthorizedException('No refresh token');
-    const { access_token, refresh_token } =
+    const { access_token, refresh_token, refreshJti } =
       await this.authService.refresh(refreshJwt);
-    const raw = process.env.REFRESH_TTL_MS;
-    const refreshTtlMs =
-      raw && /^\d+$/.test(raw) ? parseInt(raw, 10) : DEFAULT_REFRESH_MS;
+    const raw = process.env.REFRESH_TTL_MS ?? '';
+    const refreshTtlMs = /^\d+$/.test(raw) ? Number(raw) : DEFAULT_REFRESH_MS;
 
     res.cookie(
       'refresh',
       refresh_token,
       this.cookieOptions(true, refreshTtlMs),
     );
-    return { access_token };
+    // Set new access token cookie for the client
+    res.cookie(
+      'access',
+      access_token,
+      this.cookieOptions(true, 15 * 60 * 1000), // 15 minutes
+    );
+    return { access_token, refreshJti };
   }
 
   @Post('logout')
@@ -152,9 +157,8 @@ export class AuthController {
 
     const { access_token, refresh_token } = tokens;
 
-    const raw = process.env.REFRESH_TTL_MS;
-    const refreshTtlMs =
-      raw && /^\d+$/.test(raw) ? parseInt(raw, 10) : DEFAULT_REFRESH_MS;
+    const raw = process.env.REFRESH_TTL_MS ?? '';
+    const refreshTtlMs = /^\d+$/.test(raw) ? Number(raw) : DEFAULT_REFRESH_MS;
 
     res.cookie(
       'refresh',

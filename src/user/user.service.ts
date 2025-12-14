@@ -9,6 +9,7 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import { plainToInstance } from 'class-transformer';
+import { NotificationType } from 'src/notifications/dto/ntfDto';
 import { NotificationService } from 'src/notifications/notification.service';
 import { RedisService } from 'src/redis/redis.service';
 import { SocketService } from 'src/socket/socket.service';
@@ -31,86 +32,6 @@ export class UserService {
     private readonly notificationService: NotificationService,
   ) {}
 
-  // async followUser(currentUserId: string, targetUsername: string) {
-  //   const qr = this.userRepo.manager.connection.createQueryRunner();
-  //   await qr.connect();
-  //   await qr.startTransaction();
-  //   try {
-  //     const target = await qr.manager.findOne(User, {
-  //       where: { username: targetUsername },
-  //     });
-  //     if (!target) throw new NotFoundException('Target user not found');
-
-  //     // lock the join row (if exists) to serialize concurrent ops for this pair
-  //     const existing = await qr.manager.query(
-  //       `SELECT 1 FROM user_follows WHERE follower_id = $1 AND followed_id = $2 FOR UPDATE`,
-  //       [currentUserId, target.id],
-  //     );
-
-  //     // FOLLOW
-  //     if (existing.length === 0) {
-  //       await qr.manager
-  //         .createQueryBuilder()
-  //         .relation(User, 'following')
-  //         .of({ id: currentUserId })
-  //         .add(target.id);
-
-  //       await qr.manager.increment(
-  //         User,
-  //         { id: currentUserId },
-  //         'followingsCount',
-  //         1,
-  //       );
-  //       await qr.manager.increment(
-  //         User,
-  //         { id: target.id },
-  //         'followersCount',
-  //         1,
-  //       );
-  //     } else {
-  //       // already following — nothing to do (or return early)
-  //     }
-
-  //     await qr.commitTransaction();
-
-  //     // fetch fresh state and update cache immediately
-  //     // after commit
-  //     const freshCurrent = await qr.manager.findOne(User, {
-  //       where: { id: currentUserId },
-  //       relations: ['following'],
-  //     });
-  //     const freshTarget = await qr.manager.findOne(User, {
-  //       where: { id: target.id },
-  //       select: ['id', 'username', 'avatarUrl'],
-  //     });
-  //     if (!freshCurrent)
-  //       throw new NotFoundException('freshCurrent user not found');
-
-  //     // atomically replace cache: delete keys then set fresh JSON
-
-  //     await this.redis.del(`user:${currentUserId}`);
-  //     await this.redis.del(`user:uname:${freshCurrent.username}`);
-  //     await this.redis.set(
-  //       `user:${currentUserId}`,
-  //       JSON.stringify(freshCurrent),
-  //       10,
-  //     ); // 1s TTL
-  //     // return server truth
-  //     return { currentUser: freshCurrent };
-  //   } catch (err) {
-  //     try {
-  //       await qr.rollbackTransaction();
-  //     } catch {}
-  //     // handle unique-constraint error gracefully if it occurs
-  //     if ((err as any).code === '23505') {
-  //       /* duplicate key — treat as already-following */
-  //     }
-  //     throw err;
-  //   } finally {
-  //     await qr.release();
-  //   }
-  // }
-
   async followUser(currentUserId: string, targetUsername: string) {
     const qr = this.userRepo.manager.connection.createQueryRunner();
     await qr.connect();
@@ -122,13 +43,11 @@ export class UserService {
       });
       if (!target) throw new NotFoundException('Target user not found');
 
-      // lock the join row (if exists) to serialize concurrent ops for this pair
       const existing = await qr.manager.query(
         `SELECT 1 FROM user_follows WHERE follower_id = $1 AND followed_id = $2 FOR UPDATE`,
         [currentUserId, target.id],
       );
 
-      // FOLLOW
       if (existing.length === 0) {
         await qr.manager
           .createQueryBuilder()
@@ -178,11 +97,9 @@ export class UserService {
         const ntf = await this.notificationService.createForUser(
           freshTarget.id,
           {
-            type: 'follow',
-            smallBody: `${freshCurrent.username ?? 'Someone'} followed you`,
-            payloadRef: { followerId: currentUserId },
-            meta: {},
+            type: NotificationType.Follow,
             sourceId: currentUserId,
+            followerId: currentUserId,
           },
         );
 

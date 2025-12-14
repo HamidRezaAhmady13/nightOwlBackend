@@ -1,4 +1,11 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { User } from 'src/user/entity/user.entity';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 
 export enum NotificationStatus {
   Pending = 'pending',
@@ -48,22 +55,8 @@ export class NotificationEntity {
 
   @Column({ type: 'varchar', nullable: true })
   sourceId?: string | null;
-  //   //
-  //   @Column({ type: 'jsonb', nullable: true })
-  //   payloadRef: any;
 
-  //   @Column({ type: 'jsonb', nullable: true })
-  //   meta: any;
-
-  //   @Column({ type: 'timestamptz', nullable: true })
-  //   deliveredAt?: Date;
-
-  //   @Column({ type: 'timestamptz', nullable: true })
-  //   readAt?: Date;
-
-  //   @Column({ type: 'timestamptz', nullable: true })
-  //   expireAt?: Date;
-
-  //   @Column({ type: 'varchar', nullable: true })
-  //   sourceId?: string;
+  @ManyToOne(() => User, (user) => user.notifications)
+  @JoinColumn({ name: 'sourceId' })
+  sourceUser: User;
 }

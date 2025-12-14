@@ -21,7 +21,7 @@ export class CreateNtfDto {
   @IsObject()
   actor: { id: string; username: string };
   @IsString()
-  type: string;
+  type: NotificationType;
   @IsOptional()
   meta?: any;
 }
@@ -34,3 +34,31 @@ export type CreateNotificationDto = {
   meta?: any;
   sourceId?: string;
 };
+
+// export type NotificationType = 'follow' | 'like' | 'comment';
+export enum NotificationType {
+  Follow = 'follow',
+  Like = 'like',
+  Comment = 'comment',
+}
+
+// types
+export type BaseNtf = { sourceId: string; meta?: any };
+
+export type FollowNtf = BaseNtf & {
+  // type: 'follow';
+  type: NotificationType.Follow;
+  followerId: string;
+};
+export type LikeNtf = BaseNtf & {
+  type: NotificationType.Like;
+  // type: 'like';
+  postId: string;
+};
+export type CommentNtf = BaseNtf & {
+  // type: 'comment';
+  type: NotificationType.Comment;
+  postId: string;
+  commentId: string;
+};
+export type CreateNotificationWithtypesDto = FollowNtf | LikeNtf | CommentNtf;
