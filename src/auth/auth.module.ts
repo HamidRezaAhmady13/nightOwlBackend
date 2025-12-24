@@ -18,9 +18,9 @@ import { JwtRefreshStrategy } from './strategies/jwtRefreshStrategy';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([RefreshToken]),
-
+    UserModule,
     ConfigModule,
+    TypeOrmModule.forFeature([RefreshToken]),
     LocalRedisModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -31,7 +31,6 @@ import { JwtRefreshStrategy } from './strategies/jwtRefreshStrategy';
       }),
     }),
     PassportModule.register({ defaultStrategy: 'jwt' }),
-    UserModule,
     RedisModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -42,7 +41,7 @@ import { JwtRefreshStrategy } from './strategies/jwtRefreshStrategy';
         const url = password
           ? `redis://:${password}@${host}:${port}`
           : `redis://${host}:${port}`;
-        return { type: 'single', url }; // RedisModuleOptions expected by @nestjs-modules/ioredis
+        return { type: 'single', url };
       },
     }),
   ],

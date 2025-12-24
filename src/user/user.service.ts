@@ -210,6 +210,10 @@ export class UserService {
     return this.userRepo.find();
   }
 
+  async findByUserId(id: string): Promise<User | null> {
+    return this.userRepo.findOneBy({ id });
+  }
+
   async findByUsername(username: string): Promise<User | null> {
     return this.userRepo.findOneBy({ username });
   }

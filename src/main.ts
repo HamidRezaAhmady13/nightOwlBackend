@@ -20,9 +20,7 @@ async function bootstrap() {
       stopAtFirstError: true,
     }),
   );
-  // app.useGlobalInterceptors(
-  //   new CacheInterceptor(app.get('CACHE_MANAGER'), new Reflector()),
-  // );
+
   expressApp.use(express.json({ limit: '140mb' }));
   expressApp.use(express.urlencoded({ extended: true, limit: '140mb' }));
   app.enableCors({

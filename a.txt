@@ -124,20 +124,22 @@ After that, write a quick integration test: createForUser -> queue job created -
 
 
 
+docker for postgres
 
+in appModule 
+{
+  forRootAsync is applied in whole app only once!
 
-import { Logger } from '@nestjs/common';
+ synchronize: false,for prod mode
+autoLoadEntities: true, causes no need to forRoot in entire app!
 
-export class LineLogger extends Logger {
-  log(message: string, context?: string) {
-    const stack = new Error().stack?.split('\n')[2]?.trim();
-    super.log(`${message} (${stack})`, context);
-  }
+since i have autoLoadEntities: true, i can safely remove all entities  and everywhere in my app i have forFeature ([entity]) it would be added to whole connection DB , without autoLoadEntities, all sholuld be registered in forRoot and also in forFeature 
 
-  error(message: string, trace?: string, context?: string) {
-    const stack = new Error().stack?.split('\n')[2]?.trim();
-    super.error(`${message} (${stack})`, trace, context);
-  }
 }
-const logger = new LineLogger('MyService');
-logger.log('DB result:', 'MyService');
+
+
+redis → auth  → socket → api → webRtc and mediasoup
+
+
+
+ 

@@ -3,6 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Queue } from 'bull';
 import { buildNotification } from 'src/common/utils/buildNotification';
+import { LineLogger } from 'src/common/utils/lineLogger';
 import { SocketService } from 'src/socket/socket.service';
 import { DeepPartial, IsNull, Repository } from 'typeorm';
 import {
@@ -83,9 +84,12 @@ export class NotificationService {
   }
 
   async countUnreadForUser(userId: string): Promise<number> {
-    return this.repo.count({
+    const res = this.repo.count({
       where: { userId, readAt: IsNull() }, // unread = readAt IS NULL
     });
+    const logger = new LineLogger('this.logger');
+    logger.log('22', `1111  ${await res}`);
+    return res;
   }
 
   async listForUser(
@@ -100,18 +104,40 @@ export class NotificationService {
       .orderBy('n.readAt', 'ASC')
       .orderBy('n.createdAt', 'DESC')
       .take(limit + 1);
-    if (cursor) qb.andWhere('n.createdAt < :cursor', { cursor });
+
+    // if (cursor) qb.andWhere('n.createdAt < :cursor', { cursor });
+    if (cursor) {
+      try {
+        const [cursorCreatedAt, cursorId] = cursor.split('_');
+        qb.andWhere(
+          '(n.createdAt < :cursorCreatedAt OR (n.createdAt = :cursorCreatedAt AND n.id < :cursorId))',
+          { cursorCreatedAt, cursorId },
+        );
+      } catch {
+        // Fallback for old cursor format
+        qb.andWhere('n.createdAt < :cursor', { cursor });
+      }
+    }
+
     const items = await qb.getMany();
     const hasMore = items.length > limit;
     const pageItems = hasMore ? items.slice(0, -1) : items;
     const total = await this.repo.count({ where: { userId } });
 
+    // new by deepSeek
+    const lastItem = pageItems[pageItems.length - 1];
+    const nextCursor =
+      hasMore && lastItem
+        ? `${lastItem.createdAt.toISOString()}_${lastItem.id}`
+        : undefined;
+
     return {
       items: pageItems,
       total,
-      cursor: hasMore
-        ? pageItems[pageItems.length - 1].createdAt.toISOString()
-        : undefined,
+      cursor: nextCursor,
+      // cursor: hasMore
+      //   ? pageItems[pageItems.length - 1].createdAt.toISOString()
+      //   : undefined,
     };
   }
 

@@ -4,7 +4,6 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { LineLogger } from 'src/common/utils/lineLogger';
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
@@ -21,8 +20,6 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
         ? authHeader.replace(/^Bearer\s+/i, '')
         : accessCookie;
       if (tokenVal) {
-        // Log the token being checked for debugging
-
         const prefix = tokenVal.slice(0, 10);
         const key = `tok:${prefix}`;
         const now = Date.now();
@@ -40,9 +37,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     const key = infoMsg;
     const now = Date.now();
     const last = JwtAuthGuard.lastLog.get(key) ?? 0;
-    const logger = new LineLogger('handleRequest');
 
-    // logger.log(infoMsg);
     if (!user) {
       let customMsg = infoMsg;
       if (infoMsg === 'jwt expired') {
@@ -50,13 +45,6 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       } else if (infoMsg === 'invalid signature') {
         customMsg = 'ACCESS_TOKEN_INVALID';
       }
-
-      logger.warn('JwtAuthGuard: no user', {
-        info: infoMsg,
-        err: err ? (err.message ?? String(err)) : null,
-      });
-      // logger.log(customMsg);
-      // console.warn('JwtAuthGuard triggered' , infoMsg);
 
       throw new UnauthorizedException(customMsg);
     }

@@ -164,6 +164,13 @@ export class UserController {
     return this.userService.unfollowUser(currentUser.id, decoded);
   }
 
+  @Get('/id/:id')
+  getUserById(@Param('id') userId: string) {
+    const decoded = decodeURIComponent(userId);
+
+    return this.userService.findByUserId(userId);
+  }
+
   @Get(':username/posts')
   async getPostsByUsername(
     @Param('username') username: string,

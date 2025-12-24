@@ -1,4 +1,3 @@
-// refresh-token.entity.ts
 import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity('refresh_tokens')
@@ -26,8 +25,4 @@ export class RefreshToken {
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
-
-  // RefreshToken entity
-  // @Column('uuid', { nullable: true, default: () => 'gen_random_uuid()' })
-  // jti?: string;
 }

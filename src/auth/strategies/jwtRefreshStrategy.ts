@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { LineLogger } from 'src/common/utils/lineLogger';
 
 @Injectable()
 export class JwtRefreshStrategy extends PassportStrategy(
@@ -23,8 +22,6 @@ export class JwtRefreshStrategy extends PassportStrategy(
   }
 
   async validate(payload: any) {
-    new LineLogger('validate').log('payload', payload);
-
     return { id: String(payload.sub) };
   }
 }
