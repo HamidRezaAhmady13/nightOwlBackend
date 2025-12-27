@@ -23,5 +23,5 @@
     "noFallthroughCasesInSwitch": false
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["dist", "uploads", "test"]
+  "exclude": ["uploads", "test"]
 }
