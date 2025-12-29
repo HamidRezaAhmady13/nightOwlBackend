@@ -12,7 +12,9 @@ const execPromise = promisify(exec);
 
 @Injectable()
 export class MediaService {
-  private readonly rootDir = path.join(process.cwd(), 'uploads');
+  // private readonly rootDir = path.join(process.cwd(), 'uploads');
+  private readonly rootDir = '/var/storage/uploads';
+
   constructor(
     @InjectRepository(Media)
     private readonly mediaRepository: Repository<Media>,
