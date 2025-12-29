@@ -57,7 +57,7 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const avatarUrl = avatar
-      ? `/var/storage/uploads/avatars/${avatar.filename}`
+      ? `/uploads/avatars/${avatar.filename}`
       : undefined;
     const { access_token, refresh_token } = await this.authService.signUp({
       ...createUserDto,
