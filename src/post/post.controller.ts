@@ -35,13 +35,7 @@ export class PostController {
     FileInterceptor('media', {
       storage: diskStorage({
         destination: (req, file, cb) => {
-          const tempPath = path.join(
-            process.cwd(),
-            'var',
-            'storage',
-            'uploads',
-            'temp',
-          );
+          const tempPath = '/var/storage/uploads/temp'; // ✅ mounted disk
           fs.mkdirSync(tempPath, { recursive: true });
           cb(null, tempPath);
         },
