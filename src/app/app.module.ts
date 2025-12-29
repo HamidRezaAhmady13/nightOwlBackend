@@ -8,7 +8,6 @@ import { AuthModule } from 'src/auth/auth.module';
 import { RefreshToken } from 'src/auth/entity/refresh-token.entity';
 import { CommentModule } from 'src/comment/comment.module';
 import { Comment } from 'src/comment/entity/comment.entity';
-// import { GreeterModule } from 'src/greeter/greeter.module';
 import { NotificationEntity } from 'src/notifications/entity/notification.entity';
 import { NotificationModule } from 'src/notifications/notification.module';
 import { Media } from 'src/post/entity/media.entity';
@@ -27,7 +26,6 @@ import { AppService } from './app.service';
   imports: [
     AuthModule,
     RedisModule,
-    // GreeterModule,
     PostModule,
     UserModule,
     SocketModule,
