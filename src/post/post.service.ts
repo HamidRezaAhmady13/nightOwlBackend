@@ -16,13 +16,13 @@ import { toUrlPath } from 'src/common/utils/toUrlPth';
 import { MediaService } from 'src/media/media.service';
 import { NotificationType } from 'src/notifications/dto/ntfDto';
 import { NotificationService } from 'src/notifications/notification.service';
+import { CreatePostDto } from 'src/post/dto/create-post.dto';
+import { UpdatePostDto } from 'src/post/dto/update-post.dto';
+import { Media } from 'src/post/entity/media.entity';
+import { Post } from 'src/post/entity/posts.entity';
 import { RedisService } from 'src/redis/redis.service';
 import { SocketService } from 'src/socket/socket.service';
 import { User } from 'src/user/entity/user.entity';
-import { CreatePostDto } from './dto/create-post.dto';
-import { UpdatePostDto } from './dto/update-post.dto';
-import { Media } from './entity/media.entity';
-import { Post } from './entity/posts.entity';
 
 @Injectable()
 export class PostService {

@@ -6,11 +6,11 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
+import { RefreshToken } from 'src/auth/entity/refresh-token.entity';
+import { RevocationService } from 'src/auth/revocation.service';
 import { LineLogger } from 'src/common/utils/lineLogger';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
 import { UserService } from 'src/user/user.service';
-import { RefreshToken } from './entity/refresh-token.entity';
-import { RevocationService } from './revocation.service';
 
 @Injectable()
 export class AuthService {

@@ -2,7 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, JwtFromRequestFunction, Strategy } from 'passport-jwt';
-import { RevocationService } from '../revocation.service';
+import { RevocationService } from 'src/auth/revocation.service';
 
 const cookieExtractor: JwtFromRequestFunction = (req: any) =>
   req?.cookies?.access || null;

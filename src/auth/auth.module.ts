@@ -5,16 +5,16 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AuthController } from 'src/auth/auth.controller';
+import { AuthService } from 'src/auth/auth.service';
+import { RefreshToken } from 'src/auth/entity/refresh-token.entity';
+import { RefreshTokenService } from 'src/auth/refresh-token.service';
+import { RevocationService } from 'src/auth/revocation.service';
+import { GoogleStrategy } from 'src/auth/strategies/google.strategy';
+import { JwtStrategy } from 'src/auth/strategies/jwt.strategy';
+import { JwtRefreshStrategy } from 'src/auth/strategies/jwtRefreshStrategy';
 import { RedisModule as LocalRedisModule } from 'src/redis/redis.module';
 import { UserModule } from 'src/user/user.module';
-import { AuthController } from './auth.controller';
-import { AuthService } from './auth.service';
-import { RefreshToken } from './entity/refresh-token.entity';
-import { RefreshTokenService } from './refresh-token.service';
-import { RevocationService } from './revocation.service';
-import { GoogleStrategy } from './strategies/google.strategy';
-import { JwtStrategy } from './strategies/jwt.strategy';
-import { JwtRefreshStrategy } from './strategies/jwtRefreshStrategy';
 
 @Module({
   imports: [

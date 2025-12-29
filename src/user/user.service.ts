@@ -14,11 +14,11 @@ import { NotificationService } from 'src/notifications/notification.service';
 import { RedisService } from 'src/redis/redis.service';
 import { SocketService } from 'src/socket/socket.service';
 import { StorageService } from 'src/storage/storage.service';
+import { CreateUserDto } from 'src/user/dto/create-user.dto';
+import { SafeUserDto } from 'src/user/dto/safe-user.dto';
+import { UpdateUserDto } from 'src/user/dto/update-user.dto';
+import { User } from 'src/user/entity/user.entity';
 import { Repository } from 'typeorm';
-import { CreateUserDto } from './dto/create-user.dto';
-import { SafeUserDto } from './dto/safe-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
-import { User } from './entity/user.entity';
 
 @Injectable()
 export class UserService {

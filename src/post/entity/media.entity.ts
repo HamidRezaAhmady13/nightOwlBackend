@@ -1,12 +1,12 @@
+import { Post } from 'src/post/entity/posts.entity';
 import { User } from 'src/user/entity/user.entity';
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
+  Entity,
   ManyToOne,
+  PrimaryGeneratedColumn,
 } from 'typeorm';
-import { Post } from './posts.entity';
 
 @Entity('media')
 export class Media {

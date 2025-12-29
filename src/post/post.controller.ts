@@ -21,9 +21,9 @@ import * as path from 'path';
 
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
+import { CreatePostDto } from 'src/post/dto/create-post.dto';
+import { PostService } from 'src/post/post.service';
 import { User } from 'src/user/entity/user.entity';
-import { CreatePostDto } from './dto/create-post.dto';
-import { PostService } from './post.service';
 
 @UseGuards(JwtAuthGuard)
 @Controller('posts')

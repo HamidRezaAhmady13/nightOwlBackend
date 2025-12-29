@@ -23,10 +23,10 @@ import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { PostService } from 'src/post/post.service';
 import { RedisService } from 'src/redis/redis.service';
-import { SafeUserDto } from './dto/safe-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
-import { User } from './entity/user.entity';
-import { UserService } from './user.service';
+import { SafeUserDto } from 'src/user/dto/safe-user.dto';
+import { UpdateUserDto } from 'src/user/dto/update-user.dto';
+import { User } from 'src/user/entity/user.entity';
+import { UserService } from 'src/user/user.service';
 
 @UseGuards(JwtAuthGuard)
 @Controller('users')

@@ -1,4 +1,5 @@
 import { Comment } from 'src/comment/entity/comment.entity';
+import { Media } from 'src/post/entity/media.entity';
 import { User } from 'src/user/entity/user.entity';
 import {
   Column,
@@ -12,7 +13,6 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { Media } from './media.entity';
 
 @Entity('posts')
 export class Post {

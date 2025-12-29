@@ -2,14 +2,14 @@ import { BullModule } from '@nestjs/bull';
 import { forwardRef, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Comment } from 'src/comment/entity/comment.entity';
+import { NotificationEntity } from 'src/notifications/entity/notification.entity';
+import { NotificationController } from 'src/notifications/notification.controller';
+import { NotificationService } from 'src/notifications/notification.service';
+import { NotificationsProcessor } from 'src/notifications/notifications.processor';
+import { NotificationsQueueMonitor } from 'src/notifications/NotificationsQueueMonitor';
 import { Post } from 'src/post/entity/posts.entity';
 import { PostModule } from 'src/post/post.module';
 import { User } from 'src/user/entity/user.entity';
-import { NotificationsProcessor } from './ notifications.processor';
-import { NotificationEntity } from './entity/notification.entity';
-import { NotificationController } from './notification.controller';
-import { NotificationService } from './notification.service';
-import { NotificationsQueueMonitor } from './NotificationsQueueMonitor';
 
 @Module({
   controllers: [NotificationController],

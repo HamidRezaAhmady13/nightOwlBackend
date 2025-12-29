@@ -18,9 +18,9 @@ import { SocketModule } from 'src/socket/socket.module';
 import { User } from 'src/user/entity/user.entity';
 import { UserModule } from 'src/user/user.module';
 
+import { AppController } from 'src/app/app.controller';
+import { AppService } from 'src/app/app.service';
 import { RequestLoggerMiddleware } from 'src/common/middleware/request-logger.middleware';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 
 @Module({
   imports: [

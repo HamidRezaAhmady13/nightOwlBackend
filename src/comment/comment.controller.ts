@@ -10,10 +10,10 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { CommentService } from 'src/comment/comment.service';
+import { CreateCommentDto } from 'src/comment/dto/CreateCommentDto';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { User } from 'src/user/entity/user.entity';
-import { CommentService } from './comment.service';
-import { CreateCommentDto } from './dto/CreateCommentDto';
 
 @UseGuards(JwtAuthGuard)
 @Controller('comments')

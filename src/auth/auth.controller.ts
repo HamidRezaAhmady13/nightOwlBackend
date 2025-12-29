@@ -15,11 +15,11 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { Request, Response } from 'express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
+import { AuthService } from 'src/auth/auth.service';
+import { JwtRefreshGuard } from 'src/auth/guards/jwt-auth.guard';
 import { DEFAULT_REFRESH_MS } from 'src/common/constants';
 import { AuthenticatedRequest } from 'src/common/interfaces/user-request.interface';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
-import { AuthService } from './auth.service';
-import { JwtRefreshGuard } from './guards/jwt-auth.guard';
 
 @Controller('auth')
 export class AuthController {

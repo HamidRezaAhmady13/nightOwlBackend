@@ -4,14 +4,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Queue } from 'bull';
 import { buildNotification } from 'src/common/utils/buildNotification';
 import { LineLogger } from 'src/common/utils/lineLogger';
-import { SocketService } from 'src/socket/socket.service';
-import { DeepPartial, IsNull, Repository } from 'typeorm';
 import {
   CreateNotificationWithtypesDto,
   FeedPage,
   NotificationType,
-} from './dto/ntfDto';
-import { NotificationEntity } from './entity/notification.entity';
+} from 'src/notifications/dto/ntfDto';
+import { NotificationEntity } from 'src/notifications/entity/notification.entity';
+import { SocketService } from 'src/socket/socket.service';
+import { DeepPartial, IsNull, Repository } from 'typeorm';
 
 @Injectable()
 export class NotificationService {

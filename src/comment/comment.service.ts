@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { Comment } from 'src/comment/entity/comment.entity';
 import { NotificationType } from 'src/notifications/dto/ntfDto';
 import { NotificationService } from 'src/notifications/notification.service';
 import { Post } from 'src/post/entity/posts.entity';
@@ -7,7 +8,6 @@ import { RedisService } from 'src/redis/redis.service';
 import { SocketService } from 'src/socket/socket.service';
 import { User } from 'src/user/entity/user.entity';
 import { Repository } from 'typeorm';
-import { Comment } from './entity/comment.entity';
 
 @Injectable()
 export class CommentService {
@@ -72,10 +72,6 @@ export class CommentService {
         postId: postId,
         commentId: savedComment.id,
         meta: {},
-        // smallBody: `${author.username} commented on your post`,
-        // payloadRef: { postId, commentId: savedComment.id },
-        // meta: {},
-        // sourceId: savedComment.id,
       });
 
       const unread = await this.notificationService.countUnreadForUser(
@@ -192,10 +188,7 @@ export class CommentService {
         type: NotificationType.Like,
         sourceId: user.id,
         postId: comment.post?.id,
-        // smallBody: `${user.username ?? 'Someone'} liked your comment`,
-        // payloadRef: { commentId, postId: comment.post?.id },
         meta: {},
-        // sourceId: commentId,
       });
 
       const unread = await this.notificationService.countUnreadForUser(

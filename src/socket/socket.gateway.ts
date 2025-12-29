@@ -9,7 +9,7 @@ import {
 } from '@nestjs/websockets';
 import * as cookie from 'cookie';
 import { Server, Socket } from 'socket.io';
-import { SocketService } from './socket.service';
+import { SocketService } from 'src/socket/socket.service';
 
 @WebSocketGateway({
   path: '/socket.io',
