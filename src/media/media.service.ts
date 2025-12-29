@@ -12,7 +12,6 @@ const execPromise = promisify(exec);
 
 @Injectable()
 export class MediaService {
-  // private readonly rootDir = path.join(process.cwd(), 'uploads');
   private readonly rootDir = '/var/storage/uploads';
 
   constructor(
@@ -124,6 +123,44 @@ export class MediaService {
     }
     return variants;
   }
+  // async removeMediaBatch(
+  //   mediaIds: string[],
+  //   manager?: EntityManager,
+  // ): Promise<void> {
+  //   if (!mediaIds?.length) return;
+
+  //   const repo = manager ? manager.getRepository(Media) : this.mediaRepository;
+
+  //   // fetch rows first so we know file paths to delete
+  //   const rows = await repo.findByIds(mediaIds);
+
+  //   // delete DB rows
+  //   await repo.delete(mediaIds);
+
+  //   // try to unlink files (best-effort, do not throw when file missing)
+  //   for (const r of rows) {
+  //     if (!r.url) continue;
+  //     try {
+  //       // r.url may be stored as a relative path like '/uploads/...'
+  //       // const filePath = r.url.startsWith('/')
+  //       //   ? path.join(process.cwd(), r.url)
+  //       //   : path.join(process.cwd(), r.url);
+  //       const filePath = path.join(
+  //         this.rootDir,
+  //         r.url.replace('/uploads/', ''),
+  //       );
+
+  //       // use unlinkSync for simplicity; or await fs.promises.unlink(filePath)
+  //       if (fs.existsSync(filePath)) {
+  //         fs.unlinkSync(filePath);
+  //       }
+  //     } catch (err) {
+  //       // log and continue; do not fail the transaction because of FS cleanup
+  //       console.warn('Failed to unlink media file', r.url, err);
+  //     }
+  //   }
+  // }
+
   async removeMediaBatch(
     mediaIds: string[],
     manager?: EntityManager,
@@ -131,27 +168,21 @@ export class MediaService {
     if (!mediaIds?.length) return;
 
     const repo = manager ? manager.getRepository(Media) : this.mediaRepository;
-
-    // fetch rows first so we know file paths to delete
     const rows = await repo.findByIds(mediaIds);
 
-    // delete DB rows
     await repo.delete(mediaIds);
 
-    // try to unlink files (best-effort, do not throw when file missing)
     for (const r of rows) {
       if (!r.url) continue;
       try {
-        // r.url may be stored as a relative path like '/uploads/...'
-        const filePath = r.url.startsWith('/')
-          ? path.join(process.cwd(), r.url)
-          : path.join(process.cwd(), r.url);
-        // use unlinkSync for simplicity; or await fs.promises.unlink(filePath)
+        // r.url like '/uploads/avatars/foo.png'
+        const relativePath = r.url.replace('/uploads/', '');
+        const filePath = path.join(this.rootDir, relativePath);
+
         if (fs.existsSync(filePath)) {
           fs.unlinkSync(filePath);
         }
       } catch (err) {
-        // log and continue; do not fail the transaction because of FS cleanup
         console.warn('Failed to unlink media file', r.url, err);
       }
     }
