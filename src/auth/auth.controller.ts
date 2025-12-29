@@ -42,7 +42,7 @@ export class AuthController {
   @UseInterceptors(
     FileInterceptor('avatar', {
       storage: diskStorage({
-        destination: './uploads/avatars',
+        destination: './var/storage/uploads/avatars',
         filename: (req, file, cb) =>
           cb(
             null,
@@ -57,7 +57,7 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const avatarUrl = avatar
-      ? `/uploads/avatars/${avatar.filename}`
+      ? `/var/storage/uploads/avatars/${avatar.filename}`
       : undefined;
     const { access_token, refresh_token } = await this.authService.signUp({
       ...createUserDto,
