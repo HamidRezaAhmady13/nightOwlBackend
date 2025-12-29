@@ -42,7 +42,7 @@ export class AuthController {
   @UseInterceptors(
     FileInterceptor('avatar', {
       storage: diskStorage({
-        destination: './var/storage/uploads/avatars',
+        destination: '/var/storage/uploads/avatars',
         filename: (req, file, cb) =>
           cb(
             null,
