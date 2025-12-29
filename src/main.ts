@@ -21,7 +21,7 @@ async function bootstrap() {
     }),
   );
 
-  expressApp.use(express.json({ limit: '140mb' }));
+  expressApp.use(express.json({ limit: '5mb' }));
   expressApp.use(express.urlencoded({ extended: true, limit: '5mb' }));
   app.enableCors({
     origin: ['http://localhost:3001', 'http://localhost:5173'],

@@ -3,7 +3,6 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import * as Joi from 'joi';
-import { join } from 'path';
 
 import { AuthModule } from 'src/auth/auth.module';
 import { RefreshToken } from 'src/auth/entity/refresh-token.entity';
@@ -79,7 +78,7 @@ import { AppService } from './app.service';
       }),
     }),
     ServeStaticModule.forRoot({
-      rootPath: join(process.cwd(), 'uploads'),
+      rootPath: '/var/storage/uploads',
       serveRoot: '/uploads',
     }),
   ],
