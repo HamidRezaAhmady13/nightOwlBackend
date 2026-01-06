@@ -1,8 +1,9 @@
 import { IsObject, IsOptional, IsString } from 'class-validator';
 
-export type PostsInfiniteData<T> = import('@tanstack/react-query').InfiniteData<
-  FeedPage<T>
->;
+export type PostsInfiniteData<T> = {
+  pages: FeedPage<T>[];
+  pageParams: (string | undefined)[];
+};
 export type ActorDto = { id: string; username?: string; avatarUrl?: string };
 
 export type FeedPage<T> = {
