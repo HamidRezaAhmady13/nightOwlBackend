@@ -11,4 +11,8 @@ export class AppController {
 
     return this.appService.getHello();
   }
+
+  @Get('health') check() {
+    return { status: 'ok' };
+  }
 }
