@@ -1,0 +1,157 @@
+@layer utilities {
+  /* Background--------------- */
+  .u-bg-main {
+    @apply bg-amber-100 dark:bg-cobalt-800;
+  }
+  .u-bg-deep {
+    @apply bg-amber-50 dark:bg-cobalt-900;
+  }
+  .u-bg-soft {
+    @apply bg-amber-200 dark:bg-cobalt-700;
+  }
+  .u-bg-gradient {
+    @apply bg-gradient-to-b from-amber-100 to-amber-50 dark:from-cobalt-800 dark:to-cobalt-900;
+  }
+  .u-bg-grey {
+    @apply bg-gray-300 dark:bg-gray-600;
+  }
+  .u-bg-btn {
+    @apply bg-amber-700 hover:bg-amber-800   
+      dark:bg-cobalt-500 dark:hover:bg-cobalt-600;
+  }
+  .u-bg-ghost {
+    @apply bg-transparent border border-gray-300 dark:border-gray-600
+      hover:bg-gray-50 dark:hover:bg-gray-50/5;
+  }
+  .u-bg-transparent {
+    @apply bg-transparent dark:bg-transparent;
+  }
+  /* Background */
+
+  /* flex----------------- */
+  .u-flex-center {
+    @apply flex justify-center items-center;
+  }
+  .u-flex-start {
+    @apply flex justify-start items-center;
+  }
+  .u-flex-start-start {
+    @apply flex justify-start items-start;
+  }
+  .u-flex-around {
+    @apply flex justify-around items-center;
+  }
+  .u-flex-between {
+    @apply flex justify-between  items-center;
+  }
+  .u-flex-col-center {
+    @apply flex justify-center items-center flex-col;
+  }
+  /* flex */
+
+  /* texts-----------------
+  xs (<12 px) 10:1+
+  sm (12–16 px normal, 10–14 px bold) 7:1+
+  md (16–18 px normal, 14–18 px bold) 4.5:1–7:1
+  lg (≥18 px normal, ≥14 px bold) 3:1+
+
+  70=b2
+  75=BF
+  80=CC
+  85=D8
+  90=E5
+  95=f2
+
+  */
+
+  .u-text-btn {
+    @apply text-cobalt-50   dark:text-amber-50;
+  }
+  .u-text-primary {
+    @apply text-zinc-900/90 dark:text-zinc-100/95; /*12.6:1   10.95:1 */
+  }
+  .u-text-secondary {
+    @apply text-zinc-700/90 dark:text-zinc-300/90; /*7.29:1   7.49:1*/
+  }
+  .u-text-secondary-soft {
+    @apply text-zinc-600/90 dark:text-zinc-400; /*5.59:1   5.16:1*/
+  }
+  .u-text-tertiary {
+    @apply text-zinc-500/75 dark:text-zinc-500; /*2.87:1  2.74:1*/
+  }
+  .u-text-xs {
+    @apply text-xs font-extralight;
+  }
+  .u-text-sm {
+    @apply text-sm font-normal;
+  }
+  .u-text-md {
+    @apply text-md font-medium;
+  }
+  .u-text-lg {
+    @apply text-lg font-semibold;
+  }
+  .u-text-xl {
+    @apply text-xl font-bold;
+  }
+  .u-text-2xl {
+    @apply text-2xl font-bold;
+  }
+  .u-text-3xl {
+    @apply text-3xl font-bold;
+  }
+  .u-text-error {
+    @apply text-red-600 dark:text-red-400 text-sm;
+  }
+  .u-text-error-lg {
+    @apply text-red-600 dark:text-red-400 text-2xl;
+  }
+  .u-text-cobalt {
+    @apply text-cobalt-600 dark:text-cobalt-300;
+  }
+  .u-text-cobalt-soft {
+    @apply text-cobalt-500 dark:text-cobalt-400;
+  }
+  .u-text-cobalt-sharp {
+    @apply text-cobalt-400 dark:text-cobalt-200;
+  }
+  .u-text-cobalt-sharper {
+    @apply text-cobalt-400 dark:text-cobalt-100;
+  }
+  /* texts */
+
+  .u-border {
+    @apply border rounded border-primary dark:border-secondary;
+  }
+
+  .u-divider-row {
+    @apply u-flex-center gap-sm my-md  u-bg-grey;
+  }
+  .u-divider-line {
+    @apply flex-1 h-px u-bg-grey;
+  }
+
+  /* focus------------------- */
+  .u-focus-visible {
+    @apply outline-none
+  focus:outline-none 
+  
+    focus:ring-2
+    focus-visible:ring-offset-2   
+    focus:ring-focus-light
+    focus-visible:ring-offset-light 
+    dark:focus:ring-focus-dark  
+    dark:focus-visible:ring-offset-dark;
+  }
+
+  .u-focus-not-visible {
+    @apply outline-none focus:outline-none focus:ring-0 dark:focus:ring-0;
+  }
+  .u-focus-not-visible:focus-visible {
+    @apply ring-2 ring-focus-light ring-offset-2 ring-offset-light;
+  }
+  .dark .u-focus-not-visible:focus-visible {
+    @apply ring-2 ring-focus-dark ring-offset-dark;
+  }
+  /* focus */
+}

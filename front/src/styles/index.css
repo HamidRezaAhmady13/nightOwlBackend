@@ -1,0 +1,195 @@
+@import "./components/atoms.css";
+@import "./components/molecules.css";
+@import "./components/organism.css";
+@import "./utilities.css";
+/* @import "./base.css"; */
+
+@tailwind base;
+@tailwind components;
+
+html {
+  font-size: 62.5%;
+}
+
+textarea {
+  scrollbar-width: none; /* Firefox */
+  resize: none;
+}
+textarea::-webkit-scrollbar {
+  display: none; /* Safari/WebKit */
+}
+
+:root {
+  --toast-bg: #fff8e1;
+  --toast-text: #1e40af;
+  --focus-rgb-light: 255, 193, 7;
+  --focus-rgb-dark: 79, 70, 229;
+  --tw-shadow-color: var(--focus-rgb-light);
+  --player-accent: #ffa000;
+  --tuby-primary-color: #ffa000 !important;
+}
+.dark {
+  /* --focus-ring: #6366f1; */
+  --toast-bg: #1e40af;
+  --toast-text: #fff8e1;
+  --tw-shadow-color: var(--focus-rgb-dark);
+  --tuby-primary-color: #4f46e5 !important;
+  --player-accent: #4f46e5;
+}
+
+:focus {
+  outline: none;
+  /* box-shadow: 0 0 0 2px var(--focus-ring); */
+}
+
+/* 1. Smoothly reset autofill’s native yellow flash */
+input:-webkit-autofill,
+textarea:-webkit-autofill {
+  /* postpone the UA background swap so your box-shadow can paint first */
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #1f2937 !important;
+  box-shadow: inset 0 0 0 1000px #fff8e1,
+    /* your bg color */ var(--tw-ring-offset-shadow),
+    /* tailwind’s offset */ var(--tw-ring-shadow) /* tailwind’s ring */ !important;
+  /* transition: 500s ease-in-out 0s; */
+  transition: background-color 0.5s ease-in-out 0s,
+    box-shadow 0.5s ease-in-out 0s !important;
+}
+
+.dark input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #e5e7eb !important;
+  /* -webkit-text-fill-color: #1a237e !important; */
+
+  /* same 1a237e inset as base, plus your offset & ring */
+  box-shadow: inset 0 0 0 1000px #1a237e, var(--tw-ring-offset-shadow),
+    var(--tw-ring-shadow) !important;
+
+  /* re-apply your transition so the ring animates in */
+  transition: background-color 0.5s ease-in-out 0s,
+    box-shadow 0.5s ease-in-out 0s !important;
+}
+/* 2. Force your desired background & text color via a huge inset box-shadow */
+input:-webkit-autofill {
+  -webkit-box-shadow: inset 0 0 0 1000px #fff8e1 !important;
+  box-shadow: inset 0 0 0 1000px #fff8e1 !important;
+  -webkit-text-fill-color: #1f2937 !important;
+}
+
+/* 3. Dark-mode version (if you scope dark-mode via a .dark class) */
+.dark input:-webkit-autofill {
+  -webkit-box-shadow: inset 0 0 0 1000px #1a237e !important;
+  box-shadow: inset 0 0 0 1000px #1a237e !important;
+  -webkit-text-fill-color: #e5e7eb !important;
+}
+
+/* increase visible bar height a little and make the clickable area larger */
+.tuby-seek-bar {
+  position: relative; /* ensure pseudo element is positioned relative */
+  height: 4px; /* visible track height (tweak) */
+  touch-action: none; /* helps on some touch devices */
+}
+
+.tuby-seek-bar .tuby-progress {
+  /* background: var(--player-accent) !important; */
+}
+
+/* invisible hit area that extends above/below the visual track */
+.tuby-seek-bar::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -8px; /* extend upward */
+  bottom: -8px; /* extend downward */
+  pointer-events: auto; /* capture pointer events */
+  background: transparent; /* keep it invisible */
+  z-index: 2;
+}
+
+/* optional: make thumb/track slightly taller so it feels less twitchy */
+.tuby-seek-bar .thumb,
+.tuby-seek-bar .track {
+  height: 10px; /* match or slightly larger */
+  min-height: 10px;
+}
+
+.player-themed-wrapper {
+  --player-accent: #ffa000;
+}
+html.dark .player-themed-wrapper {
+  --player-accent: #4f46e5;
+}
+
+html.dark .player-themed-wrapper {
+  --player-accent: #4f46e5;
+}
+
+video {
+  width: 100%;
+  height: auto;
+}
+.video-player {
+  --player-accent: #ffa000;
+}
+
+html.dark .video-player {
+  --player-accent: #4f46e5;
+}
+
+.tuby-seek-bar .tuby-buffer {
+  height: 6px;
+}
+
+/*  */
+
+:root {
+  --player-accent: #ffa000;
+  --tuby-primary-color: #ffa000;
+}
+html.dark {
+  --player-accent: #4f46e5;
+  --tuby-primary-color: #4f46e5;
+}
+.tuby-seek-bar {
+  position: relative;
+  height: 6px;
+  background: #e6e6e6;
+  touch-action: none;
+}
+.tuby-seek-bar .tuby-progress {
+  height: 6px;
+}
+.tuby-seek-bar .tuby-buffer {
+  height: 6px;
+}
+.tuby-seek-bar .thumb,
+.tuby-seek-bar .track {
+  height: 10px;
+  min-height: 10px;
+}
+.player-themed-wrapper {
+  --player-accent: var(--player-accent);
+}
+
+.player-wrapper,
+.player-themed-wrapper,
+.player-wrapper > *,
+.player-themed-wrapper > * {
+  width: 100%;
+  height: 100%;
+}
+
+.player-wrapper video,
+.player-themed-wrapper video,
+.player-wrapper > video,
+.player-themed-wrapper > video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: transparent;
+}
+
+@tailwind utilities;

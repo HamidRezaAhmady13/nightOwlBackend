@@ -1,0 +1,8 @@
+{
+  "platform": "node",
+  "port": 3000,
+  "hooks": {
+    "build": "npm run build"
+  },
+  "disks": [{ "name": "folanbisar", "mountTo": "/var/storage" }]
+}

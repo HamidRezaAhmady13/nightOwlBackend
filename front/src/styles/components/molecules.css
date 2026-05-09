@@ -1,0 +1,32 @@
+@layer components {
+  .m-user-wrapper {
+    @apply relative inline-block h-full;
+  }
+
+  .m-search-bar {
+    @apply absolute top-full  w-full u-bg-soft shadow-lg rounded-lg z-50  p-sm;
+  }
+  .m-search-results {
+    @apply u-flex-start gap-sm p-sm cursor-pointer;
+  }
+  .m-page-main {
+    @apply flex-1 p-lg  u-bg-main rounded shadow-lg;
+  }
+  .m-page-row {
+    @apply flex flex-1 gap-md;
+  }
+
+  /*  */
+  .m-divider-row {
+    @apply u-flex-center gap-sm;
+  }
+  .m-divider-line {
+    @apply flex-1 h-px u-bg-grey;
+  }
+  .m-file-upload {
+    @apply inline-flex items-center gap-sm;
+  }
+  .m-link-plain {
+    @apply inline-flex items-center gap-sm rounded focus:outline-none focus-visible:ring-2;
+  }
+}

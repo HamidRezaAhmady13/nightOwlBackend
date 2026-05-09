@@ -1,0 +1,9 @@
+@layer components {
+  .a-row {
+    @apply flex items-center gap-sm;
+  }
+
+  .a-heading-xl {
+    @apply text-2xl font-bold;
+  }
+}

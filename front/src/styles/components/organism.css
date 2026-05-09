@@ -1,0 +1,26 @@
+@layer components {
+  .o-app-root {
+    @apply u-bg-gradient u-text-primary transition-colors duration-fast;
+  }
+  .o-app-shell {
+    @apply flex flex-col px-md w-full;
+  }
+  .o-header {
+    @apply px-md h-3xl flex justify-between items-stretch;
+  }
+  .o-post {
+    @apply py-xl px-md;
+  }
+  .o-feed {
+    @apply max-w-[90%] mx-auto py-xl px-md space-y-lg;
+  }
+  .o-login {
+    @apply max-w-md mx-auto rounded   p-lg  u-bg-main shadow-xl;
+  }
+  .o-signup {
+    @apply u-bg-main shadow-xl rounded  p-lg;
+  }
+  .o-edit-profile {
+    @apply px-md py-sm u-bg-main;
+  }
+}

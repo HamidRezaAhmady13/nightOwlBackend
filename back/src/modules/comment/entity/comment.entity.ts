@@ -1,0 +1,58 @@
+import { User } from 'src/modules/user/entity/user.entity';
+import { Post } from 'src/post/entity/posts.entity';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  Index,
+  JoinTable,
+  ManyToMany,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+
+@Entity('comments')
+export class Comment {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column()
+  text: string;
+
+  @ManyToOne(() => User, (user) => user.comments, {
+    eager: false,
+    onDelete: 'CASCADE',
+  })
+  author: User;
+
+  @Index()
+  @ManyToOne(() => Post, (post) => post.comments, { onDelete: 'CASCADE' })
+  post: Post;
+
+  @Index()
+  @ManyToOne(() => Comment, (comment) => comment.childComments, {
+    nullable: true,
+    onDelete: 'CASCADE',
+  })
+  parentComment: Comment | null;
+
+  @OneToMany(() => Comment, (comment) => comment.parentComment, {
+    cascade: true,
+  })
+  childComments: Comment[];
+
+  @Index()
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @ManyToMany(() => User)
+  @JoinTable()
+  likedByUsers: User[];
+
+  @Column({ default: 0 })
+  likeCount: number;
+
+  @Column({ default: 0 })
+  replyCount: number;
+}

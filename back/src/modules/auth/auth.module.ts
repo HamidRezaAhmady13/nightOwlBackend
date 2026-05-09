@@ -1,0 +1,59 @@
+import { RedisModule } from '@nestjs-modules/ioredis';
+import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { JwtModule } from '@nestjs/jwt';
+import { PassportModule } from '@nestjs/passport';
+
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { AuthController } from 'src/auth/auth.controller';
+import { AuthService } from 'src/auth/auth.service';
+import { RefreshToken } from 'src/auth/entity/refresh-token.entity';
+import { RefreshTokenService } from 'src/auth/refresh-token.service';
+import { RevocationService } from 'src/auth/revocation.service';
+import { GoogleStrategy } from 'src/auth/strategies/google.strategy';
+import { JwtStrategy } from 'src/auth/strategies/jwt.strategy';
+import { JwtRefreshStrategy } from 'src/auth/strategies/jwtRefreshStrategy';
+import { UserModule } from 'src/modules/user/user.module';
+import { RedisModule as LocalRedisModule } from 'src/redis/redis.module';
+
+@Module({
+  imports: [
+    UserModule,
+    ConfigModule,
+    TypeOrmModule.forFeature([RefreshToken]),
+    LocalRedisModule,
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: async (cs: ConfigService) => ({
+        secret: cs.get<string>('JWT_SECRET'),
+        signOptions: { expiresIn: '10h' },
+      }),
+    }),
+    PassportModule.register({ defaultStrategy: 'jwt' }),
+    RedisModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (cs: ConfigService) => {
+        const host = cs.get<string>('REDIS_HOST', '127.0.0.1');
+        const port = cs.get<string>('REDIS_PORT', '6379');
+        const password = cs.get<string>('REDIS_PASSWORD');
+        const url = password
+          ? `redis://:${password}@${host}:${port}`
+          : `redis://${host}:${port}`;
+        return { type: 'single', url };
+      },
+    }),
+  ],
+  controllers: [AuthController],
+  providers: [
+    AuthService,
+    GoogleStrategy,
+    JwtStrategy,
+    RevocationService,
+    RefreshTokenService,
+    JwtRefreshStrategy,
+  ],
+  exports: [AuthService, RevocationService, RefreshTokenService],
+})
+export class AuthModule {}

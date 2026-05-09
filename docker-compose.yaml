@@ -1,0 +1,91 @@
+services:
+  # ----------------- Database -----------------
+  postgres:
+    image: postgres:15-alpine
+    container_name: social-postgres
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: social_app
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ----------------- Redis -----------------
+  redis:
+    image: redis:7-alpine
+    container_name: social-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ----------------- Backend (NestJS) -----------------
+  backend:
+    build:
+      context: ./back
+      dockerfile: Dockerfile
+    container_name: social-backend
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_USER: admin
+      DATABASE_PASSWORD: admin
+      DATABASE_NAME: social_app
+      REDIS_HOST: redis # ← now uses the service name, not localhost
+      REDIS_PORT: 6379
+      JWT_SECRET: your_jwt_secret_here # replace with a strong secret
+    volumes:
+      - ./back/uploads:/app/uploads # for file uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # ----------------- Frontend (Next.js) -----------------
+  frontend:
+    build:
+      context: ./front
+      dockerfile: Dockerfile # we'll provide one below
+    container_name: social-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://backend:3001 # internal Docker network
+    depends_on:
+      - backend
+
+  # ----------------- pgAdmin (optional) -----------------
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: social-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
+  redis_data:
