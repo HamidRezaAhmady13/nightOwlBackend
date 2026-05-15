@@ -24,7 +24,7 @@ export default function CanvasPortal({
   showCanvasPortal: boolean;
 }) {
   const [mountEl, setMountEl] = useState<HTMLElement | null>(() =>
-    typeof document !== "undefined" ? document.body : null
+    typeof document !== "undefined" ? document.body : null,
   );
 
   const lifecycle = useCanvasPortalLifecycle({
@@ -40,7 +40,7 @@ export default function CanvasPortal({
   const { isMounted, isVisible, transform } = lifecycle;
   const seek = useSeekHoverListeners(
     `#video-container-${postId} .tuby-seek-bar`,
-    lifecycle.updatePointerX
+    lifecycle.updatePointerX,
   );
 
   useEffect(() => {
@@ -59,7 +59,6 @@ export default function CanvasPortal({
     background: "rgba(255,0,0,0.8)", // debug - remove later
     ...style,
   };
-  console.log(isMounted);
 
   if (!mountEl || !isMounted) return null;
 
@@ -75,6 +74,6 @@ export default function CanvasPortal({
         transform: lifecycle.transform,
       }}
     />,
-    mountEl
+    mountEl,
   );
 }

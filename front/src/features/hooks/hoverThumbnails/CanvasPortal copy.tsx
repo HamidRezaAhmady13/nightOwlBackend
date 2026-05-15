@@ -26,16 +26,15 @@ export default function CanvasPortal({
   const updatePointerX = React.useCallback((clientX: number) => {
     // forward to lifecycle hook later via seek or state
     // temporarily just log to verify wiring
-    console.log("MOVE clientX", clientX);
   }, []);
 
   const seek = useSeekHoverListeners(
     `#video-container-${postId} .tuby-seek-bar`,
-    updatePointerX
+    updatePointerX,
   );
 
   const [mountEl, setMountEl] = useState<HTMLElement | null>(() =>
-    typeof document !== "undefined" ? document.body : null
+    typeof document !== "undefined" ? document.body : null,
   );
   const { isMounted, isVisible, transform } = useCanvasPortalLifecycle({
     canvasRef,
@@ -48,8 +47,6 @@ export default function CanvasPortal({
     height,
     onRemount,
   });
-
-  // console.log(transform, "Portal");
 
   const canvasStyle: React.CSSProperties = {
     position: "fixed",
@@ -78,6 +75,6 @@ export default function CanvasPortal({
         transform: transform,
       }}
     />,
-    mountEl
+    mountEl,
   );
 }

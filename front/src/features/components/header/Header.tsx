@@ -1,4 +1,5 @@
 "use client";
+import clsx from "clsx";
 
 import Button from "../shared/Button";
 import UserDropdown from "./UserDropdown";
@@ -10,12 +11,19 @@ import { useCurrentUser } from "../AuthContext";
 
 export default function Header() {
   const { user: currentUser } = useCurrentUser();
+  console.log(currentUser);
 
   if (!currentUser) return null;
 
   return (
-    <header className="o-header z-[990] py-sm mb-xl px-md h-3xl fixed  u-bg-main top-0 left-0  w-full   ">
-      <div className="m-user-wrapper group">
+    <header
+      className={clsx(
+        "o-header z-[990] py-sm mb-xl px-md",
+        "fixed   top-0 left-0  w-full",
+        "u-bg-main",
+      )}
+    >
+      <div className="m-user-wrapper group   ">
         {currentUser && (
           <>
             <Button
@@ -36,11 +44,10 @@ export default function Header() {
           </>
         )}
       </div>
-
       {currentUser && (
         <div className="ml-auto flex items-center gap-lg">
           <NotificationButton href="/notifications" />
-          <SearchBar className="h-2xl  " />
+          <SearchBar className="h-2xl  u-bg-deep" />
         </div>
       )}
     </header>

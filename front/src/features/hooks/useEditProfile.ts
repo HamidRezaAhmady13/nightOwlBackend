@@ -8,6 +8,7 @@ import toast from "react-hot-toast";
 import { validateUpdateForm } from "../utils/validateUpdateForm";
 import { useCurrentUser } from "../components/AuthContext";
 import { queryKeys } from "../utils/queryKeys";
+import getToken from "../lib/getMeAndUsers";
 
 type ApiErrorResponse = {
   statusCode?: number;
@@ -50,12 +51,18 @@ export function useEditProfile() {
   >({
     mutationFn: async (fd) => updateUser(fd),
 
-    onSuccess: () => {
+    onSuccess: (updatedUser) => {
       queryClient.invalidateQueries({
-        queryKey: queryKeys.user.current(undefined),
+        queryKey: queryKeys.user.current(getToken() ?? ""),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.user.byUsername(currentUser!.username),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.user.byUsername(updatedUser.username),
       });
       toast.success("Profile updated!");
-      router.push(`/users/${currentUser!.username}`);
+      router.push(`/users/${updatedUser!.username}`);
     },
 
     onError: (err) => {
@@ -69,7 +76,7 @@ export function useEditProfile() {
   });
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -89,7 +96,6 @@ export function useEditProfile() {
     } = validateUpdateForm(formData);
     if (!isValid) {
       setErrors(clientErrors);
-      console.log(clientErrors);
 
       toast.error(message || "Please fix the highlighted fields");
       return;
@@ -129,6 +135,7 @@ export function useEditProfile() {
     const res = await api.patch<User>("/users/me", fd, {
       headers: { "Content-Type": "multipart/form-data" },
     });
+
     return res.data;
   }
 

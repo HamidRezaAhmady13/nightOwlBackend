@@ -1,6 +1,6 @@
-import { Comment } from 'src/comment/entity/comment.entity';
+import { Comment } from 'src/modules/comment/entity/comment.entity';
+import { Media } from 'src/modules/post/entity/media.entity';
 import { User } from 'src/modules/user/entity/user.entity';
-import { Media } from 'src/post/entity/media.entity';
 import {
   Column,
   CreateDateColumn,

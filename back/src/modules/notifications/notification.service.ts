@@ -3,14 +3,13 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Queue } from 'bull';
 import { buildNotification } from 'src/common/utils/buildNotification';
-import { LineLogger } from 'src/common/utils/lineLogger';
 import {
   CreateNotificationWithtypesDto,
   FeedPage,
   NotificationType,
-} from 'src/notifications/dto/ntfDto';
-import { NotificationEntity } from 'src/notifications/entity/notification.entity';
-import { SocketService } from 'src/socket/socket.service';
+} from 'src/modules/notifications/dto/ntfDto';
+import { NotificationEntity } from 'src/modules/notifications/entity/notification.entity';
+import { SocketService } from 'src/modules/socket/socket.service';
 import { DeepPartial, IsNull, Repository } from 'typeorm';
 
 @Injectable()
@@ -37,7 +36,7 @@ export class NotificationService {
         },
       });
     } else if (dto.type === NotificationType.Like) {
-      const postId = built.payloadRef?.postId;
+      const postId = built?.payloadRef?.postId;
       if (postId) {
         existing = await this.repo
           .createQueryBuilder('n')
@@ -64,8 +63,8 @@ export class NotificationService {
     const payload: DeepPartial<NotificationEntity> = {
       userId,
       type: dto.type,
-      smallBody: built.smallBody,
-      payloadRef: built.payloadRef ?? null,
+      smallBody: built?.smallBody,
+      payloadRef: built?.payloadRef ?? null,
       meta: dto.meta ?? null,
       sourceId: dto.sourceId ?? null,
       status: 'pending',
@@ -87,8 +86,7 @@ export class NotificationService {
     const res = this.repo.count({
       where: { userId, readAt: IsNull() }, // unread = readAt IS NULL
     });
-    const logger = new LineLogger('this.logger');
-    logger.log('22', `1111  ${await res}`);
+
     return res;
   }
 

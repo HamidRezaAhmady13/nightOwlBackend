@@ -22,7 +22,7 @@ services:
     image: redis:7-alpine
     container_name: social-redis
     ports:
-      - "6379:6379"
+      - "6380:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -40,17 +40,8 @@ services:
     restart: unless-stopped
     ports:
       - "3001:3001"
-    environment:
-      NODE_ENV: production
-      PORT: 3001
-      DATABASE_HOST: postgres
-      DATABASE_PORT: 5432
-      DATABASE_USER: admin
-      DATABASE_PASSWORD: admin
-      DATABASE_NAME: social_app
-      REDIS_HOST: redis # ← now uses the service name, not localhost
-      REDIS_PORT: 6379
-      JWT_SECRET: your_jwt_secret_here # replace with a strong secret
+    env_file:
+    - ./back/.env.production      
     volumes:
       - ./back/uploads:/app/uploads # for file uploads
     depends_on:
@@ -63,16 +54,25 @@ services:
   frontend:
     build:
       context: ./front
-      dockerfile: Dockerfile # we'll provide one below
+      #dockerfile: Dockerfile # we'll provide one below
+      dockerfile: Dockerfile.dev   
     container_name: social-frontend
     restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
-      NEXT_PUBLIC_API_URL: http://backend:3001 # internal Docker network
-    depends_on:
-      - backend
-
+      NEXT_PUBLIC_API_URL: http://localhost:3001 # internal Docker network
+      WATCHPACK_POLLING: true   
+    #depends_on:
+      #- backend
+    develop:
+      watch:
+        - path: ./front
+          action: sync
+          target: /app
+          ignore:
+            - node_modules/
+            - .next/
   # ----------------- pgAdmin (optional) -----------------
   pgadmin:
     image: dpage/pgadmin4:latest

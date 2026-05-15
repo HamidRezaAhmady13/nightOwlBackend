@@ -1,6 +1,12 @@
 "use client";
-import { createContext, useContext, useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../utils/queryKeys";
 import api from "../lib/api";
 import { User } from "../types";
@@ -16,9 +22,25 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  // 👇 Use a function to read token directly (NO STATE for token!)
-  const token = getToken();
+  const [token, setToken] = useState<string | null>(getToken());
   const [isTokenValidated, setIsTokenValidated] = useState(false);
+  // const queryClient = useQueryClient();
+
+  const syncToken = useCallback(() => {
+    const newToken = getToken();
+    setToken(newToken);
+  }, []);
+
+  useEffect(() => {
+    // Listen for StorageEvent (e.g., from another tab)
+    window.addEventListener("storage", syncToken);
+    // Listen for our own custom event (dispatched after signup/login)
+    window.addEventListener("token-changed", syncToken);
+    return () => {
+      window.removeEventListener("storage", syncToken);
+      window.removeEventListener("token-changed", syncToken);
+    };
+  }, [syncToken]);
 
   const { data, isLoading } = useQuery<User | null>({
     queryKey: queryKeys.user.current(token ?? ""),
@@ -33,8 +55,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     staleTime: 1000 * 60 * 10,
     retry: 1,
   });
-
-  // Debug log
 
   return (
     <AuthContext.Provider

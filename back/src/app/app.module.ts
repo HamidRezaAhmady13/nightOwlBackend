@@ -4,20 +4,21 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import * as Joi from 'joi';
 
-import { AuthModule } from 'src/auth/auth.module';
-import { RefreshToken } from 'src/auth/entity/refresh-token.entity';
-import { CommentModule } from 'src/comment/comment.module';
-import { Comment } from 'src/comment/entity/comment.entity';
+import { RedisModule } from 'src/core/redis/redis.module';
+import { AuthModule } from 'src/modules/auth/auth.module';
+import { RefreshToken } from 'src/modules/auth/entity/refresh-token.entity';
+import { CommentModule } from 'src/modules/comment/comment.module';
+import { Comment } from 'src/modules/comment/entity/comment.entity';
+import { NotificationEntity } from 'src/modules/notifications/entity/notification.entity';
+import { NotificationModule } from 'src/modules/notifications/notification.module';
+import { Media } from 'src/modules/post/entity/media.entity';
+import { Post } from 'src/modules/post/entity/posts.entity';
+import { PostModule } from 'src/modules/post/post.module';
+import { SocketModule } from 'src/modules/socket/socket.module';
 import { User } from 'src/modules/user/entity/user.entity';
 import { UserModule } from 'src/modules/user/user.module';
-import { NotificationEntity } from 'src/notifications/entity/notification.entity';
-import { NotificationModule } from 'src/notifications/notification.module';
-import { Media } from 'src/post/entity/media.entity';
-import { Post } from 'src/post/entity/posts.entity';
-import { PostModule } from 'src/post/post.module';
-import { RedisModule } from 'src/redis/redis.module';
-import { SocketModule } from 'src/socket/socket.module';
 
+import { join } from 'path';
 import { AppController } from 'src/app/app.controller';
 import { AppService } from 'src/app/app.service';
 import { RequestLoggerMiddleware } from 'src/common/middleware/request-logger.middleware';
@@ -76,7 +77,8 @@ import { RequestLoggerMiddleware } from 'src/common/middleware/request-logger.mi
       }),
     }),
     ServeStaticModule.forRoot({
-      rootPath: '/var/storage/uploads',
+      // rootPath: '/var/storage/uploads',
+      rootPath: join(process.cwd(), 'uploads'),
       serveRoot: '/uploads',
     }),
   ],

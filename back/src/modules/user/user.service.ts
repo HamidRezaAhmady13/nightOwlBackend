@@ -9,15 +9,15 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import { plainToInstance } from 'class-transformer';
+import { RedisService } from 'src/core/redis/redis.service';
+import { StorageService } from 'src/core/storage/storage.service';
+import { NotificationType } from 'src/modules/notifications/dto/ntfDto';
+import { NotificationService } from 'src/modules/notifications/notification.service';
+import { SocketService } from 'src/modules/socket/socket.service';
 import { CreateUserDto } from 'src/modules/user/dto/create-user.dto';
 import { SafeUserDto } from 'src/modules/user/dto/safe-user.dto';
 import { UpdateUserDto } from 'src/modules/user/dto/update-user.dto';
 import { User } from 'src/modules/user/entity/user.entity';
-import { NotificationType } from 'src/notifications/dto/ntfDto';
-import { NotificationService } from 'src/notifications/notification.service';
-import { RedisService } from 'src/redis/redis.service';
-import { SocketService } from 'src/socket/socket.service';
-import { StorageService } from 'src/storage/storage.service';
 import { Repository } from 'typeorm';
 
 @Injectable()
@@ -250,7 +250,7 @@ export class UserService {
 
   async createUser(userData: Partial<User>): Promise<User> {
     const existing = await this.userRepo.findOne({
-      where: [{ username: userData.username }, { email: userData.email }],
+      where: [{ email: userData.email }],
     });
     if (existing) {
       throw new ConflictException('Username or email already exists');
@@ -344,7 +344,7 @@ export class UserService {
       `,
         'ASC',
       )
-      .addOrderBy('user.username', 'ASC')
+      .addOrderBy('user.email', 'ASC')
       .setParameters({
         exact: query,
         partial: `%${query}%`,

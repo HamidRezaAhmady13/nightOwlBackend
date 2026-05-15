@@ -49,7 +49,7 @@ const FormInput = forwardRef<
       accept,
       onPointerDown,
     },
-    ref
+    ref,
   ) => {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -94,7 +94,7 @@ const FormInput = forwardRef<
         disabled,
         size: "md",
       }),
-      className // allow ad-hoc overrides like clickable/pseudo tweaks
+      className, // allow ad-hoc overrides like clickable/pseudo tweaks
     );
 
     return (
@@ -117,6 +117,8 @@ const FormInput = forwardRef<
             rows={rows}
             autoFocus={autoFocus} // Pass autoFocus to textarea
             onPointerDown={onPointerDown} // Pass onPointerDown to textarea
+            spellCheck={false}
+            style={{ transition: "colors" }}
           />
         ) : type === "file" ? (
           <input
@@ -128,6 +130,8 @@ const FormInput = forwardRef<
             required={required}
             disabled={disabled}
             className={`${classes} ${className}`}
+            spellCheck={false}
+            style={{ transition: "colors" }}
           />
         ) : (
           <input
@@ -144,8 +148,10 @@ const FormInput = forwardRef<
             required={required}
             disabled={disabled}
             className={`${classes} ${className}`}
-            autoFocus={autoFocus} // Pass autoFocus to input
-            onPointerDown={onPointerDown} // Pass onPointerDown to input
+            autoFocus={autoFocus}
+            onPointerDown={onPointerDown}
+            spellCheck={false}
+            style={{ transition: "colors" }}
           />
         )}
         <div className="h-xl">
@@ -153,7 +159,7 @@ const FormInput = forwardRef<
         </div>
       </div>
     );
-  }
+  },
 );
 
 FormInput.displayName = "FormInput";

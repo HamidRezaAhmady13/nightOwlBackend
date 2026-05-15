@@ -1,7 +1,6 @@
 import "react-tuby/css/main.css";
 import "@/styles/index.css";
 
-import { Inter, Space_Grotesk } from "next/font/google";
 import { cookies } from "next/headers";
 import { Toaster } from "react-hot-toast";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
@@ -12,24 +11,11 @@ import { PageMain } from "@/features/components/layout/PageMain";
 import SafeFullscreenShim from "@/features/components/SafeFullscreenShim";
 import { AuthProvider } from "@/features/components/AuthContext";
 import ReactQueryProvider from "@/features/components/ReactQueryProvider";
-import ThemeWrapper from "@/features/components/ThemeWrapper";
-
-const spaceGrotesk = Space_Grotesk({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-space",
-  display: "swap",
-});
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-  display: "swap",
-});
 
 export const metadata = {
   title: "Social App",
-  description: "Chat, post, and call in real time",
+  description:
+    "Share posts and have live notifications on likes and comments and follows ",
 };
 
 export default async function RootLayout({
@@ -39,14 +25,28 @@ export default async function RootLayout({
 }) {
   const cookieStore = await cookies();
   const theme = cookieStore.get("theme")?.value || "light";
-
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${spaceGrotesk.variable} ${
-        theme === "dark" ? "dark" : ""
-      }`}
+      className={`${theme === "dark" ? "dark" : ""}`}
+      suppressHydrationWarning
     >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                var theme = document.cookie.replace(/(?:(?:^|.*;\\s*)theme\\s*\\=\\s*([^;]*).*$)|^.*$/, "$1") || 'light';
+                if (theme === 'dark') {
+                  document.documentElement.classList.add('dark');
+                } else {
+                  document.documentElement.classList.remove('dark');
+                }
+              })();
+            `,
+          }}
+        />
+      </head>
       <body className="o-app-root min-h-screen">
         <ReactQueryProvider>
           <Toaster
@@ -66,15 +66,13 @@ export default async function RootLayout({
             }}
           />
           <SafeFullscreenShim />
-          <ThemeWrapper>
-            <AppShell>
-              <PageRow>
-                <PageMain>
-                  <AuthProvider>{children}</AuthProvider>
-                </PageMain>
-              </PageRow>
-            </AppShell>
-          </ThemeWrapper>
+          <AppShell>
+            <PageRow>
+              <PageMain>
+                <AuthProvider>{children}</AuthProvider>
+              </PageMain>
+            </PageRow>
+          </AppShell>
           <ReactQueryDevtools initialIsOpen={false} />
         </ReactQueryProvider>
       </body>

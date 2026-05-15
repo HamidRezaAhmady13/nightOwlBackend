@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotificationService } from 'src/notifications/notification.service';
+import { NotificationService } from 'src/modules/notifications/notification.service';
 
 describe('NotificationService', () => {
   let service: NotificationService;

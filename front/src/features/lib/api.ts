@@ -1,4 +1,5 @@
-export const API_URL = "http://localhost:3000";
+export const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 export async function fetchUserById(userId: string): Promise<User> {
   const response = await api.get<User>(`/users/${userId}`);
@@ -32,9 +33,8 @@ function isRefreshExpired(msg: string): boolean {
     msg === "No auth token"
   );
 }
-// http://localhost:3001
+
 export const api: AxiosInstance = axios.create({
-  // baseURL: "http://localhost:3001",
   baseURL: process.env.NEXT_PUBLIC_API_URL,
   withCredentials: true,
 });
@@ -84,7 +84,6 @@ api.interceptors.response.use(
       _retry?: boolean;
     };
     const msg = extractMessage(err);
-    console.log(msg);
 
     // Access expired → queue + single-flight refresh
     if (err.response?.status === 401 && msg === "ACCESS_TOKEN_EXPIRED") {

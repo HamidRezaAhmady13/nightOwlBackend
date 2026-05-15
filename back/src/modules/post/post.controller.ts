@@ -19,11 +19,11 @@ import * as fs from 'fs';
 import { diskStorage } from 'multer';
 import * as path from 'path';
 
-import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
+import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
+import { CreatePostDto } from 'src/modules/post/dto/create-post.dto';
+import { PostService } from 'src/modules/post/post.service';
 import { User } from 'src/modules/user/entity/user.entity';
-import { CreatePostDto } from 'src/post/dto/create-post.dto';
-import { PostService } from 'src/post/post.service';
 
 @UseGuards(JwtAuthGuard)
 @Controller('posts')
@@ -35,9 +35,11 @@ export class PostController {
     FileInterceptor('media', {
       storage: diskStorage({
         destination: (req, file, cb) => {
-          const tempPath = '/var/storage/uploads/temp'; // ✅ mounted disk
-          fs.mkdirSync(tempPath, { recursive: true });
-          cb(null, tempPath);
+          const base =
+            process.env.UPLOAD_PATH || path.join(process.cwd(), 'uploads');
+          const tempDir = path.join(base, 'temp');
+          fs.mkdirSync(tempDir, { recursive: true });
+          cb(null, tempDir);
         },
         filename: (req, file, cb) => {
           const safeName = path

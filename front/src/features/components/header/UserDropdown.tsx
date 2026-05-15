@@ -37,12 +37,12 @@ function UserDropdown() {
     document.documentElement.style.setProperty(
       "--player-accent",
       color,
-      "important"
+      "important",
     );
     document.documentElement.style.setProperty(
       "--tuby-primary-color",
       color,
-      "important"
+      "important",
     );
     document.querySelectorAll(".tuby").forEach((n) => {
       if (n instanceof HTMLElement)
@@ -93,7 +93,7 @@ function UserDropdown() {
         "u-flex-center flex-col shadow-lg rounded p-2 z-10 ",
         "opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto",
         "group-focus-within:opacity-100 group-focus-within:pointer-events-auto ",
-        "transition-opacity duration-fast"
+        "transition-opacity duration-fast",
       )}
       tabIndex={-1}
     >

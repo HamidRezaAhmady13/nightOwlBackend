@@ -1,12 +1,12 @@
-import {
-  IsString,
-  IsArray,
-  IsObject,
-  IsNumber,
-  IsDate,
-  IsOptional,
-} from 'class-validator';
 import { Type } from 'class-transformer';
+import {
+  IsArray,
+  IsDate,
+  IsNumber,
+  IsObject,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 class MediaDto {
   @IsString()
@@ -27,6 +27,7 @@ class OwnerDto {
   @IsString()
   id: string;
 
+  @IsOptional()
   @IsString()
   username: string;
 

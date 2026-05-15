@@ -5,5 +5,5 @@ export function PageMain({
   children: React.ReactNode;
   className?: string;
 }) {
-  return <main className={`m-page-main   ${className}`}>{children}</main>;
+  return <main className={`m-page-main     ${className}`}>{children}</main>;
 }

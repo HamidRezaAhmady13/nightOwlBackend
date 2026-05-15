@@ -1,7 +1,5 @@
 import { Exclude, Expose, Transform } from 'class-transformer';
-import { DEFAULT_AVATAR } from 'src/common/constants';
 
-// const DEFAULT_AVATAR = '/uploads/default-avatar.png';
 const BASE = process.env.API_URL?.replace(/\/$/, '') || '';
 
 type MiniUser = { id: string; username: string; avatarUrl?: string };
@@ -15,7 +13,7 @@ export class SafeUserDto {
   @Expose()
   @Transform(({ obj }) => {
     const raw = obj.avatarUrl;
-    if (!raw) return DEFAULT_AVATAR;
+    if (!raw) return '/uploads/default-avatar.png';
     if (raw.startsWith('http')) return raw;
     return `${BASE}${raw}`;
   })
@@ -24,7 +22,6 @@ export class SafeUserDto {
   @Expose() bio?: string;
   @Expose() location?: string;
   @Expose() website?: string;
-
   @Expose()
   @Transform(({ obj }) => {
     const following = obj.following as any[] | undefined;
@@ -33,10 +30,16 @@ export class SafeUserDto {
       (u): MiniUser => ({
         id: String(u.id),
         username: u.username,
+        // avatarUrl:
+        //   u.avatarUrl && u.avatarUrl.startsWith('http')
+        //     ? u.avatarUrl
+        //     : `${BASE}${u.avatarUrl || DEFAULT_AVATAR}`,
         avatarUrl:
           u.avatarUrl && u.avatarUrl.startsWith('http')
             ? u.avatarUrl
-            : `${BASE}${u.avatarUrl || DEFAULT_AVATAR}`,
+            : u.avatarUrl
+              ? `/uploads/${u.avatarUrl}`
+              : '/uploads/default-avatar.png',
       }),
     );
   })

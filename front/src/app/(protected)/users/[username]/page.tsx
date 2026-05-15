@@ -30,7 +30,7 @@ export default function UserProfilePage() {
   const rawUsername = params?.username;
   const username = Array.isArray(rawUsername)
     ? rawUsername[0]
-    : rawUsername ?? undefined;
+    : (rawUsername ?? undefined);
 
   const decodedUsername = decodeSafe(username);
   if (!decodedUsername) return <p>User not found.</p>;
@@ -42,7 +42,7 @@ export default function UserProfilePage() {
     queryKey: queryKeys.user.byUsername(decodedUsername),
     queryFn: async () => {
       const res = await api.get(
-        `/users/${encodeURIComponent(decodedUsername)}`
+        `/users/${encodeURIComponent(decodedUsername)}`,
       );
       return res.data;
     },
@@ -52,14 +52,14 @@ export default function UserProfilePage() {
 
   const isFollowing = Array.isArray(currentUser?.following)
     ? (currentUser.following as UserPreview[]).some(
-        (u) => u.username === decodedUsername
+        (u) => u.username === decodedUsername,
       )
     : false;
 
   const followMutation = useMutation({
     mutationFn: async ({ username }: { username: string }) => {
       const res = await api.post(
-        `/users/${encodeURIComponent(username)}/follow`
+        `/users/${encodeURIComponent(username)}/follow`,
       );
       return res;
     },
@@ -68,7 +68,7 @@ export default function UserProfilePage() {
         queryKey: queryKeys.user.current(getToken() ?? ""),
       });
       const prev = queryClient.getQueryData<User | undefined>(
-        queryKeys.user.current(getToken() ?? "")
+        queryKeys.user.current(getToken() ?? ""),
       );
       // optimistic add
       queryClient.setQueryData<User | undefined>(
@@ -82,7 +82,7 @@ export default function UserProfilePage() {
                   { username: vars.username, id: `temp-${Date.now()}` },
                 ],
               }
-            : old
+            : old,
       );
       return { prev };
     },
@@ -90,7 +90,7 @@ export default function UserProfilePage() {
       if (ctx?.prev)
         queryClient.setQueryData(
           queryKeys.user.current(getToken() ?? ""),
-          ctx.prev
+          ctx.prev,
         );
     },
     onSuccess: () => {
@@ -106,7 +106,7 @@ export default function UserProfilePage() {
   const unfollowMutation = useMutation({
     mutationFn: async ({ username }: { username: string }) => {
       const res = await api.delete(
-        `/users/${encodeURIComponent(username)}/unfollow`
+        `/users/${encodeURIComponent(username)}/unfollow`,
       );
 
       return res;
@@ -116,7 +116,7 @@ export default function UserProfilePage() {
         queryKey: queryKeys.user.current(getToken() ?? ""),
       });
       const prev = queryClient.getQueryData<User | undefined>(
-        queryKeys.user.current(getToken() ?? "")
+        queryKeys.user.current(getToken() ?? ""),
       );
       // optimistic remove
       queryClient.setQueryData<User | undefined>(
@@ -126,10 +126,10 @@ export default function UserProfilePage() {
             ? {
                 ...old,
                 following: (old.following ?? []).filter(
-                  (u: UserPreview) => u.username !== vars.username
+                  (u: UserPreview) => u.username !== vars.username,
                 ),
               }
-            : old
+            : old,
       );
       return { prev };
     },
@@ -137,7 +137,7 @@ export default function UserProfilePage() {
       if (ctx?.prev)
         queryClient.setQueryData(
           queryKeys.user.current(getToken() ?? ""),
-          ctx.prev
+          ctx.prev,
         );
     },
     onSuccess: () => {
@@ -165,10 +165,9 @@ export default function UserProfilePage() {
   if (!profileUser) return <p>User not found.</p>;
 
   const headerProps = getUserHeaderProps(profileUser);
-  console.log(headerProps);
 
   return (
-    <div className="max-w-3xl mx-auto px-md py-2xl space-y-xl">
+    <div className="max-w-3xl mx-auto px-md py-2xl space-y-xl  ">
       {currentUser &&
         profileUser &&
         currentUser.email !== profileUser.email && (
@@ -184,7 +183,6 @@ export default function UserProfilePage() {
             }}
           />
         )}
-
       <UserHeader {...headerProps} />
       <PostsGrid username={decodedUsername} />
       <OverlayRoutes />

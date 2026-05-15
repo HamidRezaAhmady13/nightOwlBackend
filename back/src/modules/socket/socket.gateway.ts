@@ -1,4 +1,5 @@
 import { Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import {
   OnGatewayConnection,
@@ -9,12 +10,12 @@ import {
 } from '@nestjs/websockets';
 import * as cookie from 'cookie';
 import { Server, Socket } from 'socket.io';
-import { SocketService } from 'src/socket/socket.service';
+import { SocketService } from 'src/modules/socket/socket.service';
 
 @WebSocketGateway({
   path: '/socket.io',
   cors: {
-    origin: 'http://localhost:3001',
+    origin: 'http://localhost:3000',
     credentials: true,
   },
 })
@@ -27,6 +28,7 @@ export class SocketGateway
   constructor(
     private readonly socketSvc: SocketService,
     private readonly jwtService: JwtService,
+    private readonly config: ConfigService,
   ) {}
 
   afterInit() {
@@ -47,7 +49,7 @@ export class SocketGateway
       if (!token) throw new Error('no token');
 
       const payload = this.jwtService.verify(token, {
-        secret: process.env.JWT_SECRET,
+        secret: this.config.get('JWT_SECRET'),
       });
 
       client.data.userId = payload.sub ?? payload.userId ?? payload.id;

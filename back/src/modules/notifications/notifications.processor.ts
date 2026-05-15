@@ -1,7 +1,7 @@
 // notifications.processor.ts
 import { Process, Processor } from '@nestjs/bull';
 import { Job } from 'bull';
-import { NotificationService } from 'src/notifications/notification.service';
+import { NotificationService } from 'src/modules/notifications/notification.service';
 
 @Processor('notifications')
 export class NotificationsProcessor {

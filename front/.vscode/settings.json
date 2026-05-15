@@ -7,9 +7,9 @@
   "tailwindCSS.emmetCompletions": true,
   "tailwindCSS.experimental.configFile": "tailwind.config.js",
   "workbench.colorCustomizations": {
-    "titleBar.activeBackground": "#a8ecec",
-    "titleBar.inactiveBackground": "#88ecec",
-    "titleBar.activeForeground": "#010133",
-    "titleBar.inactiveForeground": "#010133"
+    "titleBar.activeBackground": "#bfdfff",
+    "titleBar.inactiveBackground": "#9fbfdf",
+    "titleBar.activeForeground": "#000000",
+    "titleBar.inactiveForeground": "#000000"
   }
 }

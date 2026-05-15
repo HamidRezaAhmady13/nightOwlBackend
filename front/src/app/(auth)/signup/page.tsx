@@ -3,21 +3,13 @@
 import { useRouter } from "next/navigation";
 
 import Button from "@/features/components/shared/Button";
-// import { API_URL } from "@/app/lib/api";
 import FormInput from "@/features/components/forms/FormInput";
-import FileUploadInput from "@/features/components/forms/FileUploadInput";
 import { useSignupForm } from "@/features/hooks/useSignupForm";
 import { API_URL } from "@/features/lib/api";
 
 export default function SignupPage() {
-  const {
-    form,
-    errors,
-    loading,
-    handleChange,
-    handleFileChange,
-    handleSubmit,
-  } = useSignupForm();
+  const { form, errors, loading, handleChange, handleSubmit, disabled } =
+    useSignupForm();
 
   const router = useRouter();
 
@@ -33,15 +25,6 @@ export default function SignupPage() {
         }}
       >
         <FormInput
-          name="username"
-          value={form.username}
-          onChange={handleChange}
-          placeholder="Username"
-          required
-          error={errors.username}
-        />
-
-        <FormInput
           type="email"
           name="email"
           value={form.email}
@@ -49,6 +32,16 @@ export default function SignupPage() {
           placeholder="Email"
           required
           error={errors.email}
+        />
+
+        <FormInput
+          type="text"
+          name="username"
+          value={form.username}
+          onChange={handleChange}
+          placeholder="username"
+          required
+          error={errors.username}
         />
 
         <FormInput
@@ -60,36 +53,15 @@ export default function SignupPage() {
           required
           error={errors.password}
         />
-        <div className="pb-xl">
-          <FileUploadInput
-            name="avatarUrl"
-            onChange={handleFileChange}
-            selectedFile={form.avatarUrl}
-            className="w-full     "
-          />
-        </div>
 
         <FormInput
-          name="bio"
-          value={form.bio || ""}
+          type="password"
+          name="passwordConfirm"
+          value={form.passwordConfirm}
           onChange={handleChange}
-          placeholder="Bio (optional)"
-          multiline
-        />
-
-        <FormInput
-          name="location"
-          value={form.location || ""}
-          onChange={handleChange}
-          placeholder="Location (optional)"
-        />
-
-        <FormInput
-          name="website"
-          type="text"
-          value={form.website || ""}
-          onChange={handleChange}
-          placeholder="Website (optional)"
+          placeholder="Password"
+          required
+          error={errors.passwordConfirm}
         />
 
         <div>
@@ -101,7 +73,7 @@ export default function SignupPage() {
             height={"md"}
             size={"sm"}
           />
-          <div className="m-divider-row ">
+          {/* <div className="m-divider-row ">
             <div className="m-divider-line my-md " />
             <span className="u-text-secondary">or</span>
             <div className="m-divider-line my-md " />
@@ -115,7 +87,7 @@ export default function SignupPage() {
             onClick={() => {
               window.location.href = `${API_URL}/auth/google`;
             }}
-          />
+          /> */}
         </div>
       </form>
     </div>

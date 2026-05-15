@@ -1,18 +1,17 @@
 import { forwardRef, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Comment } from 'src/comment/entity/comment.entity';
-import { MediaService } from 'src/modules/media/media.service';
+import { RedisModule } from 'src/core/redis/redis.module';
+import { Comment } from 'src/modules/comment/entity/comment.entity';
+import { NotificationModule } from 'src/modules/notifications/notification.module';
+import { Media } from 'src/modules/post/entity/media.entity';
+import { Post } from 'src/modules/post/entity/posts.entity';
+import { PostController } from 'src/modules/post/post.controller';
+import { PostService } from 'src/modules/post/post.service';
 import { User } from 'src/modules/user/entity/user.entity';
-import { NotificationModule } from 'src/notifications/notification.module';
-import { Media } from 'src/post/entity/media.entity';
-import { Post } from 'src/post/entity/posts.entity';
-import { PostController } from 'src/post/post.controller';
-import { PostService } from 'src/post/post.service';
-import { RedisModule } from 'src/redis/redis.module';
 
 @Module({
   controllers: [PostController],
-  providers: [PostService, MediaService],
+  providers: [PostService],
   imports: [
     TypeOrmModule.forFeature([Post, Media, Comment, User]),
     forwardRef(() => NotificationModule),

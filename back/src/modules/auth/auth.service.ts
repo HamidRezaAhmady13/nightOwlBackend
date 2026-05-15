@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { DataSource, Repository } from 'typeorm';
@@ -11,12 +15,6 @@ import { RefreshToken } from 'src/modules/auth/entity/refresh-token.entity';
 import { RevocationService } from 'src/modules/auth/revocation.service';
 import { CreateUserDto } from 'src/modules/user/dto/create-user.dto';
 import { UserService } from 'src/modules/user/user.service';
-
-// type JwtPayload = { sub: string | number; jti?: string; email?: string };
-
-// type JwtPayload = {
-//   [key: string]: string | number | boolean | null;
-// };
 
 interface JwtPayload {
   sub: string;
@@ -77,14 +75,60 @@ export class AuthService {
     return { access_token, refresh_token, refreshJti, ttlMs };
   }
 
-  async signUp(createUserDto: CreateUserDto) {
+  async signUp(createUserDto: CreateUserDto): Promise<{
+    access_token: string;
+    refresh_token: string;
+    refreshJti: string;
+    ttlMs: number;
+    username: string;
+  }> {
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
-    const newUser = await this.userService.createUser({
-      ...createUserDto,
-      password: hashedPassword,
-      provider: 'local',
-    });
-    return this.createTokens(newUser.id);
+
+    let username = createUserDto.username;
+    if (!username || username.trim() === '') {
+      const prefix = createUserDto.email.split('@')[0];
+      const random = Math.random().toString(36).substring(2, 8);
+      username = `${prefix}_${random}`;
+    }
+
+    // const newUser = await this.userService.createUser({
+    //   ...createUserDto,
+    //   username,
+    //   password: hashedPassword,
+    //   provider: 'local',
+    // });
+    // // return this.createTokens(newUser.id);
+    // return {
+    //   ...(await this.createTokens(newUser.id)),
+    //   username: newUser.username as string,
+    // };
+
+    try {
+      const newUser = await this.userService.createUser({
+        ...createUserDto,
+        username,
+        password: hashedPassword,
+        provider: 'local',
+      });
+      return {
+        ...(await this.createTokens(newUser.id)),
+        username: newUser.username as string,
+      };
+    } catch (error: any) {
+      // TypeORM throws QueryFailedError for unique violations (code 23505)
+      if (error.code === '23505') {
+        // The detail field contains the duplicated key
+        if (error.detail?.includes('Key (username)=')) {
+          throw new ConflictException('This username should be unique');
+        } else if (error.detail?.includes('Key (email)=')) {
+          throw new ConflictException(
+            'An account with this email already exists.',
+          );
+        }
+      }
+      // re‑throw any other error
+      throw error;
+    }
   }
 
   async signIn(email: string, password: string) {

@@ -4,13 +4,13 @@
   }
 
   .m-search-bar {
-    @apply absolute top-full  w-full u-bg-soft shadow-lg rounded-lg z-50  p-sm;
+    @apply absolute top-full  w-full u-bg-deep shadow-sm  rounded-lg z-50  p-sm;
   }
   .m-search-results {
     @apply u-flex-start gap-sm p-sm cursor-pointer;
   }
   .m-page-main {
-    @apply flex-1 p-lg  u-bg-main rounded shadow-lg;
+    @apply flex-1 p-lg  u-bg-main rounded;
   }
   .m-page-row {
     @apply flex flex-1 gap-md;

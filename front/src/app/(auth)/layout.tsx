@@ -8,10 +8,5 @@ export default async function AuthLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <div className="protected-wrapper">
-      {/* You can add navbars, sidebars, or context providers here */}
-      {children}
-    </div>
-  );
+  return <div>{children}</div>;
 }

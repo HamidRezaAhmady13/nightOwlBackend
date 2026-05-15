@@ -1,10 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import { SignupFormData, SignupFormErrors } from "../types";
 import { flushSync } from "react-dom";
 
-import { buildFormData } from "@/features/utils/buildFormData";
 import { api } from "../lib/api";
 
 import {
@@ -12,34 +11,35 @@ import {
   startRefreshInterval,
 } from "../utils/startRefreshInterval";
 import { validateSignupForm } from "../utils/validateSignupForm";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function useSignupForm() {
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const [form, setForm] = useState<SignupFormData>({
-    username: "",
     email: "",
     password: "",
-    avatarUrl: null,
-    bio: "",
-    location: "",
-    website: "",
+    passwordConfirm: "",
+    username: "",
   });
 
   const [errors, setErrors] = useState<SignupFormErrors>({
-    username: "",
     email: "",
+    username: "",
     password: "",
-    avatarUrl: "",
-    bio: "",
-    location: "",
-    website: "",
+    passwordConfirm: "",
   });
+  const [disabled, setDisabled] = useState(false);
+
+  useEffect(() => {
+    setDisabled(form.password !== form.passwordConfirm);
+  }, [form.password, form.passwordConfirm]);
 
   const [loading, setLoading] = useState(false);
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     const { name, value } = e.target;
     flushSync(() => {
@@ -47,20 +47,12 @@ export function useSignupForm() {
     });
 
     setErrors((prev) => ({ ...prev, [name]: "" }));
-    console.log(form);
-    console.log(errors);
-  };
-
-  const handleFileChange = (file: File | null) => {
-    setForm((prev) => ({ ...prev, avatarUrl: file }));
-    setErrors((prev) => ({ ...prev, avatarUrl: "" }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loading) return;
 
-    // client-side validation
     const { isValid, errors: clientErrors, message } = validateSignupForm(form);
     setErrors(clientErrors);
     if (!isValid) {
@@ -70,9 +62,24 @@ export function useSignupForm() {
 
     setLoading(true);
     try {
-      await api.post("/auth/signup", buildFormData(form));
+      const response = await api.post("/auth/signup", {
+        password: form.password,
+        email: form.email,
+        username: form.username,
+      });
+      queryClient.clear();
+
+      const access = response.data.access_token;
+      if (access) {
+        localStorage.setItem("token", access);
+        api.defaults.headers.common["Authorization"] = `Bearer ${access}`;
+      }
+      const username = response.data.username;
+      window.dispatchEvent(new Event("token-changed"));
+
       toast.success("Welcome aboard!");
-      router.push("/feed");
+
+      router.push(`/users/${username}/edit`);
       clearRefreshInterval();
       startRefreshInterval();
     } catch (err: any) {
@@ -80,8 +87,8 @@ export function useSignupForm() {
       const first = Array.isArray(msgs)
         ? msgs.find((m) => typeof m === "string")
         : typeof msgs === "string"
-        ? msgs
-        : null;
+          ? msgs
+          : null;
 
       const errorMsg = first || "Signup failed";
       // map Nest error -> field
@@ -103,7 +110,7 @@ export function useSignupForm() {
     errors,
     loading,
     handleChange,
-    handleFileChange,
+    disabled,
     handleSubmit,
   };
 }

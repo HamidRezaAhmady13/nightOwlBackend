@@ -4,7 +4,7 @@ import { Injectable } from '@nestjs/common';
 export class AppService {
   getHello(): string {
     return `
-    theres for now 
+    only these main subroutes are availible:
     /auth , 
     /comment ,
     /post ,

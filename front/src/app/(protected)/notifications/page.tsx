@@ -2,10 +2,7 @@
 import NotificationItem from "@/features/components/notification/NotificationItem";
 import Button from "@/features/components/shared/Button";
 import Spinner from "@/features/components/shared/Spinner";
-import {
-  Notification as AppNotification,
-  NotificationFeedPage,
-} from "@/features/types/notification.types";
+import { Notification as AppNotification } from "@/features/types/notification.types";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNotifications } from "@/features/hooks/useNotifications";
 import { useMarkManyRead } from "@/features/hooks/useMarkManyRead";
@@ -24,7 +21,6 @@ export default function NotificationsPage() {
 
   const { mutate: markManyRead } = useMarkManyRead();
 
-  // Memoized notifications with deduplication
   const notifications = useMemo(() => {
     if (!data?.pages) return [];
 
@@ -46,7 +42,6 @@ export default function NotificationsPage() {
   useEffect(() => {
     if (!hasMarkedRead.current && notifications.length > 0 && !isLoading) {
       const unreadIds = notifications.filter((n) => !n.readAt).map((n) => n.id);
-      console.log("📝 Unread IDs to mark:", unreadIds.length);
 
       if (unreadIds.length > 0) {
         markManyRead(unreadIds);

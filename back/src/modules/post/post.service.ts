@@ -11,18 +11,16 @@ import { Brackets, EntityManager, Repository } from 'typeorm';
 import * as fs from 'fs';
 import * as path from 'path';
 
-import { extractQualityFromFilename } from 'src/common/utils/extractQualityFromFilename';
 import { toUrlPath } from 'src/common/utils/toUrlPth';
-import { MediaService } from 'src/modules/media/media.service';
+import { RedisService } from 'src/core/redis/redis.service';
+import { NotificationType } from 'src/modules/notifications/dto/ntfDto';
+import { NotificationService } from 'src/modules/notifications/notification.service';
+import { CreatePostDto } from 'src/modules/post/dto/create-post.dto';
+import { UpdatePostDto } from 'src/modules/post/dto/update-post.dto';
+import { Media } from 'src/modules/post/entity/media.entity';
+import { Post } from 'src/modules/post/entity/posts.entity';
+import { SocketService } from 'src/modules/socket/socket.service';
 import { User } from 'src/modules/user/entity/user.entity';
-import { NotificationType } from 'src/notifications/dto/ntfDto';
-import { NotificationService } from 'src/notifications/notification.service';
-import { CreatePostDto } from 'src/post/dto/create-post.dto';
-import { UpdatePostDto } from 'src/post/dto/update-post.dto';
-import { Media } from 'src/post/entity/media.entity';
-import { Post } from 'src/post/entity/posts.entity';
-import { RedisService } from 'src/redis/redis.service';
-import { SocketService } from 'src/socket/socket.service';
 
 @Injectable()
 export class PostService {
@@ -33,7 +31,6 @@ export class PostService {
     private readonly mediaRepository: Repository<Media>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-    private readonly mediaService: MediaService,
     private readonly redis: RedisService,
     private readonly socketService: SocketService,
     private readonly notificationService: NotificationService,
@@ -196,63 +193,21 @@ export class PostService {
         const ext = path.extname(media.originalname).toLowerCase();
 
         // If it's a video and supported ext, process video (thumbnails + mp4 variants)
-        if (mimeType.startsWith('video/') && isVideoExt(ext)) {
-          const processed = await this.mediaService.processVideo(
-            finalPath,
-            user.id,
-            post.id,
-            media.originalname,
-          );
+        const type = mimeType.startsWith('image/')
+          ? 'image'
+          : mimeType.startsWith('video/')
+            ? 'video'
+            : 'file';
 
-          // save mp4 variants
-          for (const variantPath of processed.mp4Variants) {
-            const quality = extractQualityFromFilename(variantPath);
-            const relative = toUrlPath(variantPath);
-            await queryRunner.manager.save(
-              queryRunner.manager.create(Media, {
-                type: 'video',
-                url: relative,
-                owner: user,
-                post,
-                quality,
-              }),
-            );
-          }
-
-          // save thumbnails
-          for (const thumbPath of processed.thumbnails) {
-            const relative = toUrlPath(thumbPath);
-            await queryRunner.manager.save(
-              queryRunner.manager.create(Media, {
-                type: 'image',
-                url: relative,
-                owner: user,
-                post,
-              }),
-            );
-          }
-
-          // save original video entry (use relative path)
-          await queryRunner.manager.save(
-            queryRunner.manager.create(Media, {
-              type: 'video',
-              url: toUrlPath(finalPath),
-              owner: user,
-              post,
-              quality: 'original',
-            }),
-          );
-        } else {
-          // image or other file
-          await queryRunner.manager.save(
-            queryRunner.manager.create(Media, {
-              type: mimeType.startsWith('image/') ? 'image' : 'file',
-              url: toUrlPath(finalPath),
-              owner: user,
-              post,
-            }),
-          );
-        }
+        // image or other file
+        await queryRunner.manager.save(
+          queryRunner.manager.create(Media, {
+            type,
+            url: toUrlPath(finalPath),
+            owner: user,
+            post,
+          }),
+        );
       }
 
       // 3) increment postsCount atomically
@@ -265,11 +220,82 @@ export class PostService {
 
       await queryRunner.commitTransaction();
 
-      // Return a fresh post instance (if you want the media loaded, fetch it separately)
       return post;
     } catch (err) {
       await queryRunner.rollbackTransaction();
-      // Optionally: cleanup moved files if necessary (left as exercise)
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  async updatePost(
+    postId: string,
+    dto: UpdatePostDto,
+    currentUserId: string,
+    newMedia?: Express.Multer.File,
+  ) {
+    const queryRunner =
+      this.postRepository.manager.connection.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      const post = await queryRunner.manager.findOne(Post, {
+        where: { id: postId },
+        relations: ['owner', 'media'],
+      });
+      if (!post) throw new NotFoundException('Post not found');
+      if (post.owner.id !== currentUserId) throw new ForbiddenException();
+
+      // update simple fields
+      if (dto.content !== undefined) post.content = dto.content;
+      await queryRunner.manager.save(post);
+
+      // optional media replacement flow
+      if (dto.replaceMedia && newMedia) {
+        // 1) remove existing media rows and delete files (delegate to MediaService)
+        const existingMedia = post.media ?? [];
+        if (existingMedia.length) {
+          // MediaService should remove DB rows and unlink files atomically where possible
+          await removeMediaBatch(
+            existingMedia.map((m) => m.id),
+            queryRunner.manager,
+          );
+        }
+
+        // 2) move/process new media and save rows via mediaService using queryRunner.manager
+        const finalPath = buildFinalPath(
+          newMedia.originalname,
+          currentUserId,
+          postId,
+        );
+        fs.mkdirSync(path.dirname(finalPath), { recursive: true });
+        fs.renameSync(newMedia.path, finalPath);
+
+        const mimeType = newMedia.mimetype;
+        const type = mimeType.startsWith('image/')
+          ? 'image'
+          : mimeType.startsWith('video/')
+            ? 'video'
+            : 'file';
+
+        const ext = path.extname(newMedia.originalname).toLowerCase();
+
+        await queryRunner.manager.save(
+          this.mediaRepository.create({
+            type,
+            url: toUrlPath(finalPath),
+            owner: post.owner,
+            post,
+          }),
+        );
+      }
+
+      await queryRunner.commitTransaction();
+      return post;
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      // optionally cleanup any moved new files if needed
       throw err;
     } finally {
       await queryRunner.release();
@@ -321,111 +347,6 @@ export class PostService {
     return post;
   }
 
-  async updatePost(
-    postId: string,
-    dto: UpdatePostDto, // e.g. { content?: string, replaceMedia?: boolean }
-    currentUserId: string,
-    newMedia?: Express.Multer.File,
-  ) {
-    const queryRunner =
-      this.postRepository.manager.connection.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-    try {
-      const post = await queryRunner.manager.findOne(Post, {
-        where: { id: postId },
-        relations: ['owner', 'media'],
-      });
-      if (!post) throw new NotFoundException('Post not found');
-      if (post.owner.id !== currentUserId) throw new ForbiddenException();
-
-      // update simple fields
-      if (dto.content !== undefined) post.content = dto.content;
-      await queryRunner.manager.save(post);
-
-      // optional media replacement flow
-      if (dto.replaceMedia && newMedia) {
-        // 1) remove existing media rows and delete files (delegate to MediaService)
-        const existingMedia = post.media ?? [];
-        if (existingMedia.length) {
-          // MediaService should remove DB rows and unlink files atomically where possible
-          await this.mediaService.removeMediaBatch(
-            existingMedia.map((m) => m.id),
-            queryRunner.manager,
-          );
-        }
-
-        // 2) move/process new media and save rows via mediaService using queryRunner.manager
-        const finalPath = buildFinalPath(
-          newMedia.originalname,
-          currentUserId,
-          postId,
-        );
-        fs.mkdirSync(path.dirname(finalPath), { recursive: true });
-        fs.renameSync(newMedia.path, finalPath);
-
-        const mimeType = newMedia.mimetype;
-        const ext = path.extname(newMedia.originalname).toLowerCase();
-        if (mimeType.startsWith('video/') && isVideoExt(ext)) {
-          const processed = await this.mediaService.processVideo(
-            finalPath,
-            currentUserId,
-            postId,
-            newMedia.originalname,
-          );
-          // save variants and thumbnails using queryRunner.manager
-          for (const variantPath of processed.mp4Variants) {
-            await queryRunner.manager.save(
-              this.mediaRepository.create({
-                type: 'video',
-                url: toUrlPath(variantPath),
-                owner: post.owner,
-                post,
-              }),
-            );
-          }
-          for (const t of processed.thumbnails) {
-            await queryRunner.manager.save(
-              this.mediaRepository.create({
-                type: 'image',
-                url: toUrlPath(t),
-                owner: post.owner,
-                post,
-              }),
-            );
-          }
-          await queryRunner.manager.save(
-            this.mediaRepository.create({
-              type: 'video',
-              url: toUrlPath(finalPath),
-              owner: post.owner,
-              post,
-              quality: 'original',
-            }),
-          );
-        } else {
-          await queryRunner.manager.save(
-            this.mediaRepository.create({
-              type: mimeType.startsWith('image/') ? 'image' : 'file',
-              url: toUrlPath(finalPath),
-              owner: post.owner,
-              post,
-            }),
-          );
-        }
-      }
-
-      await queryRunner.commitTransaction();
-      return post;
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      // optionally cleanup any moved new files if needed
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
-  }
-
   async deletePost(postId: string, currentUserId: string) {
     const queryRunner =
       this.postRepository.manager.connection.createQueryRunner();
@@ -441,7 +362,7 @@ export class PostService {
 
       // delete media rows and files (delegate to MediaService)
       if (post.media && post.media.length) {
-        await this.mediaService.removeMediaBatch(
+        await removeMediaBatch(
           post.media.map((m) => m.id),
           queryRunner.manager,
         );
@@ -541,10 +462,6 @@ export class PostService {
         sourceId: user.id,
         postId: postId,
         meta: {},
-        // smallBody: `${user.username ?? 'Someone'} liked your post`,
-        // payloadRef: { postId },
-        // meta: {},
-        // sourceId: postId,
       });
 
       const unread = await this.notificationService.countUnreadForUser(
@@ -594,4 +511,31 @@ function isVideoExt(ext: string) {
     '.wmv',
     '.m4v',
   ].includes(ext);
+}
+
+async function removeMediaBatch(
+  mediaIds: string[],
+  manager?: EntityManager,
+): Promise<void> {
+  if (!mediaIds?.length) return;
+
+  const repo = manager ? manager.getRepository(Media) : this.mediaRepository;
+  const rows = await repo.findByIds(mediaIds);
+
+  await repo.delete(mediaIds);
+
+  for (const r of rows) {
+    if (!r.url) continue;
+    try {
+      // r.url like '/uploads/avatars/foo.png'
+      const relativePath = r.url.replace('/uploads/', '');
+      const filePath = path.join(this.rootDir, relativePath);
+
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    } catch (err) {
+      console.warn('Failed to unlink media file', r.url, err);
+    }
+  }
 }

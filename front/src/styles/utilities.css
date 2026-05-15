@@ -1,16 +1,16 @@
 @layer utilities {
   /* Background--------------- */
   .u-bg-main {
-    @apply bg-amber-100 dark:bg-cobalt-800;
+    @apply bg-amber-50 dark:bg-cobalt-800;
   }
   .u-bg-deep {
-    @apply bg-amber-50 dark:bg-cobalt-900;
+    @apply bg-amber-100 dark:bg-cobalt-900;
   }
   .u-bg-soft {
     @apply bg-amber-200 dark:bg-cobalt-700;
   }
   .u-bg-gradient {
-    @apply bg-gradient-to-b from-amber-100 to-amber-50 dark:from-cobalt-800 dark:to-cobalt-900;
+    @apply bg-gradient-to-b from-amber-50 to-amber-100 dark:from-cobalt-800 dark:to-cobalt-900;
   }
   .u-bg-grey {
     @apply bg-gray-300 dark:bg-gray-600;

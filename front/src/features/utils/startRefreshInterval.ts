@@ -10,10 +10,9 @@ export function startRefreshInterval() {
         clearInterval(refreshIntervalId!);
         refreshIntervalId = null;
       });
-      console.log(refreshIntervalId);
     },
 
-    1000 * 60 * 10
+    1000 * 60 * 10,
   );
 }
 

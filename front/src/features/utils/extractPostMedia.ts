@@ -1,16 +1,21 @@
 import { Post } from "@/features/types";
 
 export function getVideoVariants(post: Post) {
-  return (
+  // first try processed variants (quality set, not "original")
+  const processed =
     post.media?.filter(
-      (m) => m.type === "video" && m.quality && m.quality !== "original"
-    ) || []
-  );
+      (m) => m.type === "video" && m.quality && m.quality !== "original",
+    ) || [];
+
+  if (processed.length > 0) return processed;
+
+  // fallback to raw video files (no quality, or quality: "original")
+  return post.media?.filter((m) => m.type === "video") || [];
 }
 
 export function getOriginalVideo(post: Post) {
   return post.media?.find(
-    (m) => m.type === "video" && m.quality === "original"
+    (m) => m.type === "video" && m.quality === "original",
   );
 }
 
@@ -19,7 +24,7 @@ export function getPosterImage(post: Post) {
     (m) =>
       m.type === "image" &&
       m.url.includes("thumbnail") &&
-      m.url.endsWith(".jpg")
+      m.url.endsWith(".jpg"),
   );
 }
 
@@ -29,7 +34,7 @@ export function getPostImages(post: Post) {
       (m) =>
         m.type === "image" &&
         !m.url.includes("thumbnail") &&
-        !m.url.includes("sprite")
+        !m.url.includes("sprite"),
     ) || []
   );
 }

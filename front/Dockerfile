@@ -3,6 +3,7 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install --legacy-peer-deps
 COPY . .
+COPY .env.production .env.production 
 RUN npm run build
 
 FROM node:24-alpine

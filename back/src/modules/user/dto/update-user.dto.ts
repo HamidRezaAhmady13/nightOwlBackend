@@ -30,19 +30,32 @@ export class UpdateUserDto {
   password?: string;
 
   @IsOptional()
-  @IsUrl()
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() === '' ? undefined : value,
+  )
+  @IsUrl({ require_protocol: false })
   avatarUrl?: string;
 
   @IsOptional()
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() === '' ? undefined : value,
+  )
   @Length(0, 160)
   bio?: string;
 
   @IsOptional()
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() === '' ? undefined : value,
+  )
   @Length(0, 100)
   location?: string;
 
   @IsOptional()
-  @IsUrl()
+  @Transform(({ value }) => {
+    if (typeof value === 'string' && value.trim() === '') return null; // <-- return null, not undefined
+    return value;
+  })
+  @IsUrl({ require_protocol: false })
   website?: string;
 
   @IsOptional()

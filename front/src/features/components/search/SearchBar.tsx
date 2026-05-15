@@ -41,7 +41,7 @@ function SearchBar({ className }: { className?: string }) {
       </form>
 
       {isOpen && (
-        <div ref={modalRef} className="m-search-bar  mt-sm">
+        <div ref={modalRef} className="m-search-bar  mt-sm ">
           <SearchResults
             users={searchResults}
             onSelect={() => setIsOpen(false)}

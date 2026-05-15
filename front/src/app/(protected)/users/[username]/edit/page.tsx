@@ -19,8 +19,10 @@ export default function EditProfilePage() {
   if (isLoading) return <Spinner />;
 
   return (
-    <div className="max-w-2xl mx-auto o-edit-profile shadow-lg  ">
-      <h1 className="u-text-lg u-text-secondary mb-xl">Edit Your Profile</h1>
+    <div className="max-w-2xl mt-3xl mx-auto o-edit-profile shadow-lg  ">
+      <h1 className="u-text-lg u-text-secondary mb-xl">
+        Update or complete Your Profile
+      </h1>
       <form onSubmit={handleSubmit} className="space-y-md">
         <FormInput
           name="username"
@@ -60,12 +62,13 @@ export default function EditProfilePage() {
         />
         <div className="pb-xl">
           <FileUploadInput
-            name="avatarUrl"
+            name="media-upload"
+            label="Choose Media"
+            accept="image/*,video/*"
             selectedFile={formData.avatarUrl}
             onChange={(file) => {
               handleFileChange(file);
             }}
-            className="w-full p-sm u-border "
           />
         </div>
         <div className="u-flex-center py-xl">

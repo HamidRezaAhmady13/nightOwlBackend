@@ -18,5 +18,7 @@ export async function searchUsers({
   const res = await api.get<SearchResponse>("/users/search", {
     params: { q, page, limit },
   });
+  console.log(res);
+
   return res.data;
 }

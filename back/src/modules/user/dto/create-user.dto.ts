@@ -11,6 +11,7 @@ import {
 export class CreateUserDto {
   @IsString()
   @Length(3, 20)
+  @IsOptional()
   @Transform(({ value }) => value.trim())
   username: string;
 

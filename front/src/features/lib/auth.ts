@@ -5,18 +5,19 @@ import { api, API_URL } from "./api";
 export async function loginUser(email: string, password: string) {
   const res = await api.post("/auth/signin", { email, password });
 
-  console.log("logged");
-
   const access = res.data.access_token;
   if (access) {
     localStorage.setItem("token", access);
+    window.dispatchEvent(new Event("token-changed"));
   }
-  console.log(access);
-  console.log("API Base URL:", process.env.NEXT_PUBLIC_API_URL);
   startRefreshInterval();
 }
 
 export async function logoutUser() {
+  localStorage.removeItem("token");
+  window.dispatchEvent(new Event("token-changed"));
+  delete api.defaults.headers.common["Authorization"];
+
   return api.post("/auth/logout", {}, { withCredentials: true });
 }
 

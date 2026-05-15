@@ -30,7 +30,7 @@ export const useSocket = () => useContext(SocketContext);
 
 export default function SocketProvider({
   children,
-  url = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3000",
+  url = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3001",
   userId,
 }: {
   children: React.ReactNode;
@@ -138,7 +138,7 @@ export default function SocketProvider({
           }
 
           const exists = prev.pages[0]?.items.some(
-            (item) => item.id === ntf.id
+            (item) => item.id === ntf.id,
           );
           if (exists) return prev;
 
@@ -152,7 +152,7 @@ export default function SocketProvider({
             ...prev,
             pages: [updatedFirstPage, ...prev.pages.slice(1)],
           };
-        }
+        },
       );
 
       queryClient.setQueryData<number | undefined>(unreadKey, (prev) => {
@@ -176,7 +176,7 @@ export default function SocketProvider({
                 pages: prev.pages.map((page) => ({
                   ...page,
                   items: page.items.map((item) =>
-                    item.id === ntf.id ? { ...item, sourceUser: user } : item
+                    item.id === ntf.id ? { ...item, sourceUser: user } : item,
                   ),
                 })),
               };

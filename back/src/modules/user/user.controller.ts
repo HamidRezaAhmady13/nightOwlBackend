@@ -15,18 +15,21 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Request, Response } from 'express';
+import * as fs from 'fs';
 import { diskStorage } from 'multer';
+import * as path from 'path';
 import { extname } from 'path';
-import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
+import { RedisService } from 'src/core/redis/redis.service';
+import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
+import { PostService } from 'src/modules/post/post.service';
 import { SafeUserDto } from 'src/modules/user/dto/safe-user.dto';
 import { UpdateUserDto } from 'src/modules/user/dto/update-user.dto';
 import { User } from 'src/modules/user/entity/user.entity';
 import { UserService } from 'src/modules/user/user.service';
-import { PostService } from 'src/post/post.service';
-import { RedisService } from 'src/redis/redis.service';
 
 @UseGuards(JwtAuthGuard)
 @Controller('users')
@@ -35,6 +38,7 @@ export class UserController {
     private readonly userService: UserService,
     private readonly postService: PostService,
     private readonly redis: RedisService,
+    private readonly config: ConfigService,
   ) {}
 
   @Get('me')
@@ -89,8 +93,13 @@ export class UserController {
   @UseInterceptors(
     FileInterceptor('avatar', {
       storage: diskStorage({
-        destination: process.env.UPLOAD_PATH || './uploads',
-
+        // destination: process.env.UPLOAD_PATH || './uploads',
+        destination: (req, file, cb) => {
+          const base = process.env.UPLOAD_PATH || './uploads';
+          const avatarsPath = path.join(base, 'avatars');
+          fs.mkdirSync(avatarsPath, { recursive: true });
+          cb(null, avatarsPath);
+        },
         filename: (req, file, cb) => {
           const uniqueSuffix =
             Date.now() + '-' + Math.round(Math.random() * 1e9);
@@ -108,14 +117,15 @@ export class UserController {
       ? `/uploads/avatars/${avatar.filename}`
       : undefined;
 
-    const sanitizedDto = Object.fromEntries(
-      Object.entries(updateDto).filter(
-        ([_, value]) => value !== '' && value !== null && value !== undefined,
-      ),
-    );
+    // const sanitizedDto = Object.fromEntries(
+    //   Object.entries(updateDto).filter(
+    //     ([_, value]) => value !== '' && value !== null && value !== undefined,
+    //   ),
+    // );
 
     const payload: Partial<UpdateUserDto> = {
-      ...sanitizedDto,
+      // ...sanitizedDto,
+      ...updateDto,
       ...(avatarUrl && { avatarUrl }),
     };
 

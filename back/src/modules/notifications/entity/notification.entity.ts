@@ -15,13 +15,6 @@ export enum NotificationStatus {
 // TypeORM simplified
 @Entity('notifications')
 export class NotificationEntity {
-  // @Column({
-  //   type: 'enum',
-  //   enum: NotificationStatus,
-  //   default: NotificationStatus.Pending,
-  // })
-  // status: NotificationStatus;
-
   @PrimaryGeneratedColumn('uuid') id: string;
   @Column()
   userId: string;

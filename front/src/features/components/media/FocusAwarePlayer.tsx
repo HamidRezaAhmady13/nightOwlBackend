@@ -14,8 +14,6 @@ export default function FocusAwarePlayer({
 }: FocusAwarePlayerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<any>(null);
-  console.log(isActive);
-  console.log(onActivate);
 
   useEffect(() => {
     const handleFsChange = () => containerRef.current?.focus();

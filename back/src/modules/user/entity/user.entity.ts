@@ -2,7 +2,6 @@ import {
   Column,
   CreateDateColumn,
   Entity,
-  Index,
   JoinTable,
   ManyToMany,
   OneToMany,
@@ -10,19 +9,23 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-import { Comment } from 'src/comment/entity/comment.entity';
-import { NotificationEntity } from 'src/notifications/entity/notification.entity';
-import { Media } from 'src/post/entity/media.entity';
-import { Post } from 'src/post/entity/posts.entity';
+import { Comment } from 'src/modules/comment/entity/comment.entity';
+import { NotificationEntity } from 'src/modules/notifications/entity/notification.entity';
+import { Media } from 'src/modules/post/entity/media.entity';
+import { Post } from 'src/modules/post/entity/posts.entity';
 
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ unique: true })
-  @Index()
-  username: string;
+  @Column({
+    nullable: true,
+    type: 'varchar',
+    length: 50,
+    unique: true,
+  })
+  username: string | null;
 
   @Column({ unique: true })
   email: string;

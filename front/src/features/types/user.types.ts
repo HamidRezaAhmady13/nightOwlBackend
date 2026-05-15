@@ -13,9 +13,11 @@ export type User = {
   followingsCount?: number;
 };
 
-type SignupForm = Omit<User, "id" | "avatarUrl"> & {
+type SignupForm = Pick<User, "email"> & {
   password: string;
-  avatarUrl: File | null;
+  email: string;
+  username: string;
+  passwordConfirm: string;
 };
 export type SignupFormData = SignupForm;
 export type SignupFormErrors = Partial<Record<keyof SignupForm, string>>;

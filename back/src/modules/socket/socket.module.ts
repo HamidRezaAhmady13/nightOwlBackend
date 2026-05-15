@@ -1,8 +1,8 @@
 import { Global, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
-import { SocketGateway } from 'src/socket/socket.gateway';
-import { SocketService } from 'src/socket/socket.service';
+import { SocketGateway } from 'src/modules/socket/socket.gateway';
+import { SocketService } from 'src/modules/socket/socket.service';
 
 @Global()
 @Module({
@@ -17,6 +17,6 @@ import { SocketService } from 'src/socket/socket.service';
     }),
   ],
   providers: [SocketGateway, SocketService],
-  exports: [SocketService], // ✅ only export the service
+  exports: [SocketService],
 })
 export class SocketModule {}

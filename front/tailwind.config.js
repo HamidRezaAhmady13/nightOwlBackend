@@ -11,10 +11,6 @@ module.exports = {
   ],
   theme: {
     extend: {
-      fontFamily: {
-        sans: ["var(--font-inter)", "sans-serif"],
-        heading: ["var(--font-space)", "sans-serif"],
-      },
       fontSize: {
         xxs: ["0.8rem", { lineHeight: "1.2rem" }], // 12px
         xs: ["1.2rem", { lineHeight: "1.4rem" }], // 12px

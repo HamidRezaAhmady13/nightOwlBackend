@@ -10,10 +10,9 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import { LineLogger } from 'src/common/utils/lineLogger';
-import { NotificationService } from 'src/notifications/notification.service';
-import { SocketService } from 'src/socket/socket.service';
+import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
+import { NotificationService } from 'src/modules/notifications/notification.service';
+import { SocketService } from 'src/modules/socket/socket.service';
 import {
   CreateNotificationWithtypesDto,
   CreateNtfDto,
@@ -24,8 +23,6 @@ import {
 @UseGuards(JwtAuthGuard)
 @Controller('notifications')
 export class NotificationController {
-  private readonly logger = new LineLogger('NotificationController');
-
   constructor(
     private readonly ntfService: NotificationService,
     private readonly socketService: SocketService,
@@ -38,8 +35,6 @@ export class NotificationController {
   async unreadCount(@Req() req: RequestWithUser) {
     const userId = req.user.id;
     const unread = await this.ntfService.countUnreadForUser(userId);
-
-    this.logger.log('unreadCount', `User ${userId} has ${unread} unread`);
 
     return { unread };
   }

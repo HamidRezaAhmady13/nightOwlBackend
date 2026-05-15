@@ -8,8 +8,7 @@ import { usePaginationQuery } from "@/features/hooks/usePaginationQuery";
 import { usePostsInfinite } from "@/features/hooks/usePostsInfinite";
 
 export default function FeedPage() {
-  const { page, limit, setParams } =
-    usePaginationQuery(/* optional defaultLimit here */);
+  const { page, limit, setParams } = usePaginationQuery();
   const { data, isLoading, isFetchingNextPage, fetchNextPage, hasNextPage } =
     usePostsInfinite(limit);
 
@@ -21,10 +20,9 @@ export default function FeedPage() {
   if (isLoading) return <Spinner />;
 
   return (
-    <div className="mt-2xl">
+    <div className="  ">
       {posts.map((post) => (
         <PostShell
-          // limit={limit}
           key={post.id}
           post={post}
           onCommentClick={() => setActivePostId(post.id)}
@@ -52,7 +50,7 @@ export default function FeedPage() {
               window.history.replaceState(
                 {},
                 "",
-                `${window.location.pathname}?${params.toString()}`
+                `${window.location.pathname}?${params.toString()}`,
               );
               setParams({ page: nextPage });
             }}

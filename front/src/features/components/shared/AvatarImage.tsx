@@ -1,4 +1,3 @@
-// import { API_URL } from "@/app/lib/api";
 import { API_URL } from "@/features/lib/api";
 import Image from "next/image";
 
@@ -17,11 +16,16 @@ function AvatarImage({
   let resolvedSrc = fallback;
 
   if (src) {
-    if (src.startsWith("http")) {
-      resolvedSrc = src;
+    const cleanSrc = src.replace(/^src\/uploads\//, "/uploads/");
+    if (cleanSrc.startsWith("http")) {
+      resolvedSrc = cleanSrc;
     } else if (baseUrl) {
-      const normalizedSrc = src.startsWith("/") ? src : `/${src}`;
+      const normalizedSrc = cleanSrc.startsWith("/")
+        ? cleanSrc
+        : `/${cleanSrc}`;
       resolvedSrc = `${baseUrl}${normalizedSrc}`;
+    } else {
+      resolvedSrc = cleanSrc;
     }
   }
 

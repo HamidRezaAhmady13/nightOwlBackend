@@ -1,34 +1,20 @@
 import { SignupFormData, SignupFormErrors } from "@/features/types";
-import {
-  validateUsername,
-  validateEmail,
-  validatePassword,
-  validateOptionalUrl,
-  validateAvatarFile,
-} from "./validators";
+import { validateEmail, validatePassword } from "./validators";
 
 export function validateSignupForm(form: SignupFormData) {
   const errors: SignupFormErrors = {
     email: validateEmail(form.email),
     password: validatePassword(form.password),
-    username: validateUsername(form.username),
-    website: validateOptionalUrl(form.website),
-    avatarUrl: validateAvatarFile(form.avatarUrl),
-    bio: "",
-    location: "",
+    passwordConfirm: validatePassword(form.passwordConfirm),
   };
 
-  const message = errors.username
-    ? errors.username
-    : errors.email
+  const message = errors.email
     ? errors.email
     : errors.password
-    ? errors.password
-    : errors.website
-    ? errors.website
-    : errors.avatarUrl
-    ? errors.avatarUrl
-    : "";
+      ? errors.password
+      : errors.passwordConfirm
+        ? errors.passwordConfirm
+        : "";
 
   return {
     isValid: !Object.values(errors).some(Boolean),

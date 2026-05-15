@@ -17,16 +17,12 @@ export function SpritePreview({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [spriteImg, setSpriteImg] = useState<HTMLImageElement | null>(null);
   const [visible, setVisible] = useState(false);
-  console.log(document.querySelector(".tuby-progress-bar"));
-  console.log(document.querySelector(".tuby-seek"));
 
   // Load sprite
   useEffect(() => {
-    console.log("useffect1");
     const img = new Image();
     img.src = spriteUrl;
     img.onload = () => {
-      console.log("✅ Sprite loaded:", spriteUrl);
       setSpriteImg(img);
     };
     img.onerror = () => console.error("❌ Failed to load sprite:", spriteUrl);
@@ -34,14 +30,12 @@ export function SpritePreview({
 
   // Attach listeners after sprite loads
   useEffect(() => {
-    console.log("useffect2");
-
     if (!spriteImg || !canvasRef.current) return;
 
     // Wait until the progress bar exists
     const poll = setInterval(() => {
       const timeline = document.querySelector(
-        ".tuby-seek"
+        ".tuby-seek",
       ) as HTMLElement | null;
       if (!timeline) return;
 
@@ -56,7 +50,7 @@ export function SpritePreview({
         const percent = x / rect.width;
         const frameIndex = Math.min(
           Math.floor(percent * totalFrames),
-          totalFrames - 1
+          totalFrames - 1,
         );
         const col = frameIndex % columns;
         const row = Math.floor(frameIndex / columns);
@@ -67,7 +61,6 @@ export function SpritePreview({
 
         // Show it
         setVisible(true);
-        console.log(visible, "at useEffect!");
 
         // Draw frame
         ctx.clearRect(0, 0, frameWidth, frameHeight);
@@ -80,7 +73,7 @@ export function SpritePreview({
           0,
           0,
           frameWidth,
-          frameHeight
+          frameHeight,
         );
       };
 
@@ -94,7 +87,7 @@ export function SpritePreview({
       return () => {
         timeline.removeEventListener(
           "mousemove",
-          handleMouseMove as EventListener
+          handleMouseMove as EventListener,
         );
         timeline.removeEventListener("mouseleave", handleMouseLeave);
       };
@@ -102,8 +95,6 @@ export function SpritePreview({
 
     return () => clearInterval(poll);
   }, [spriteImg, frameWidth, frameHeight, columns, totalFrames]);
-
-  console.log("Canvas visible state:", visible);
 
   return (
     <>

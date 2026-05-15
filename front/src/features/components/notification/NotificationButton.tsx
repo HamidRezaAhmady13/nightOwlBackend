@@ -17,7 +17,6 @@ export default function NotificationButton({ href }: Props) {
 
   // Step 1.1: Get unread count
   const { data: unreadCount = 0, isLoading } = useUnreadCount(user?.id);
-  console.log(unreadCount);
 
   // Step 1.2: Show loading state briefly
   if (isLoading) {
@@ -43,7 +42,7 @@ export default function NotificationButton({ href }: Props) {
         "transition-colors duration-normal",
         hasUnread
           ? "text-amber-800 hover:text-amber-900 dark:text-cobalt-300 dark:hover:text-cobalt-200"
-          : "text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+          : "text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200",
       )}
     >
       {hasUnread ? (

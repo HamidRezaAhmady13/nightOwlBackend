@@ -1,12 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Comment } from 'src/comment/entity/comment.entity';
+import { RedisService } from 'src/core/redis/redis.service';
+import { Comment } from 'src/modules/comment/entity/comment.entity';
+import { NotificationType } from 'src/modules/notifications/dto/ntfDto';
+import { NotificationService } from 'src/modules/notifications/notification.service';
+import { Post } from 'src/modules/post/entity/posts.entity';
+import { SocketService } from 'src/modules/socket/socket.service';
 import { User } from 'src/modules/user/entity/user.entity';
-import { NotificationType } from 'src/notifications/dto/ntfDto';
-import { NotificationService } from 'src/notifications/notification.service';
-import { Post } from 'src/post/entity/posts.entity';
-import { RedisService } from 'src/redis/redis.service';
-import { SocketService } from 'src/socket/socket.service';
 import { Repository } from 'typeorm';
 
 @Injectable()

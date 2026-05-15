@@ -12,10 +12,10 @@ function UserItem({ user, onClick }: { user: User; onClick: () => void }) {
       className={clsx(
         "m-search-results u-flex-start gap-sm",
         "transition-all duration-slow outline-none rounded-sm",
-        "u-bg-soft ",
+        "u-bg-deep ",
         "u-focus-visible",
         "shadow-2xl",
-        "my-xs"
+        "my-xs",
       )}
     >
       <div className="w-xl ">

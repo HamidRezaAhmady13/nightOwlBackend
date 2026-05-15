@@ -33,7 +33,6 @@ export default function CommentsModal({
     // wait for paint to complete
     const raf = requestAnimationFrame(() => {
       const el = document.getElementById(`comment-${normalizedId}`);
-      console.log("target:", `comment-${normalizedId}`, el);
       if (el) {
         el.scrollIntoView({ behavior: "smooth", block: "center" });
         el.classList.add("highlight");
@@ -69,14 +68,7 @@ export default function CommentsModal({
 
   // if (typeof window === "undefined") return null;
   if (typeof window !== "undefined") {
-    window.addEventListener("load", () => {
-      console.log("PAGE LOAD focused element:", document.activeElement);
-      console.log(
-        "focused element id/class:",
-        (document.activeElement as HTMLElement)?.id,
-        (document.activeElement as HTMLElement)?.className
-      );
-    });
+    window.addEventListener("load", () => {});
   }
 
   useEffect(() => {
@@ -160,6 +152,6 @@ export default function CommentsModal({
         </div>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 }
