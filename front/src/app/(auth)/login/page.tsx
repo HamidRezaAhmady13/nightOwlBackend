@@ -63,20 +63,6 @@ export default function LoginPage() {
           className=" my-0"
         />
       </form>
-      {/* <div className="m-divider-row   ">
-        <div className="m-divider-line my-md" />
-        <span className="u-text-secondary">or</span>
-        <div className="m-divider-line my-md" />
-      </div> */}
-      {/* 
-      <Button
-        full={true}
-        size={"sm"}
-        height={"md"}
-        label="Continue with Google"
-        onClick={redirectToGoogleAuth}
-        className=" my-0"
-      /> */}
 
       <div className="  mt-xl   ">
         <p className="u-grey-text text-center u-flex-center  ">

@@ -1,5 +1,6 @@
 import { BullModule } from '@nestjs/bull';
 import { forwardRef, Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Comment } from 'src/modules/comment/entity/comment.entity';
 import { NotificationEntity } from 'src/modules/notifications/entity/notification.entity';
@@ -17,13 +18,23 @@ import { User } from 'src/modules/user/entity/user.entity';
   imports: [
     TypeOrmModule.forFeature([NotificationEntity, Comment, Post, User]),
     forwardRef(() => PostModule),
-    // SocketModule,
-    BullModule.registerQueue({ name: 'notifications' }),
+
+    BullModule.registerQueueAsync({
+      name: 'notifications',
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        redis: {
+          host: config.get('REDIS_HOST', 'redis'),
+          port: config.get('REDIS_PORT', 6379),
+          maxRetriesPerRequest: null,
+        },
+      }),
+    }),
   ],
   providers: [
     NotificationService,
     NotificationsProcessor,
-    // SocketGateway,
     NotificationsQueueMonitor,
   ],
 })

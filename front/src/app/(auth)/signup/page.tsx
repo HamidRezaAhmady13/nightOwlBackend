@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import Button from "@/features/components/shared/Button";
 import FormInput from "@/features/components/forms/FormInput";
 import { useSignupForm } from "@/features/hooks/useSignupForm";
-import { API_URL } from "@/features/lib/api";
 
 export default function SignupPage() {
   const { form, errors, loading, handleChange, handleSubmit, disabled } =
@@ -73,21 +72,21 @@ export default function SignupPage() {
             height={"md"}
             size={"sm"}
           />
-          {/* <div className="m-divider-row ">
+          <div className="m-divider-row ">
             <div className="m-divider-line my-md " />
             <span className="u-text-secondary">or</span>
             <div className="m-divider-line my-md " />
           </div>
           <Button
-            label="Sign up with Google"
+            label="back to login page"
             type="button"
             className="w-full  my-0"
             height={"md"}
             size={"sm"}
             onClick={() => {
-              window.location.href = `${API_URL}/auth/google`;
+              window.location.href = `/login`;
             }}
-          /> */}
+          />
         </div>
       </form>
     </div>

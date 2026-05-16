@@ -113,7 +113,6 @@ export default function PostMedia({
           </MediaWrapper>
         </div>
       )}
-      {/* {files.length > 0 && <p>asd</p>} */}
       {files.length > 0 && (
         <>
           <PostFiles files={post.media} />

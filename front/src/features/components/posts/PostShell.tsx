@@ -42,10 +42,6 @@ export default function PostShell({
         isInteractive ? (e) => e.key === "Enter" && handleNavigate() : undefined
       }
     >
-      <div style={{ flex: "0 0 auto" }}>
-        <PostHeader post={post} />
-      </div>
-
       {mode === "modal" && (
         <div
           style={{
@@ -61,17 +57,23 @@ export default function PostShell({
       )}
 
       {mode === "feed" && (
-        <div
-          style={{
-            overflow: "auto",
-            minHeight: 0,
-            padding: "12px 0",
-          }}
-        >
-          <PostMedia post={post} mode={mode} />
+        <>
+          <div style={{ flex: "0 0 auto" }}>
+            <PostHeader post={post} />
+          </div>
 
-          <PostContent post={post} />
-        </div>
+          <div
+            style={{
+              overflow: "auto",
+              minHeight: 0,
+              padding: "12px 0",
+            }}
+          >
+            <PostMedia post={post} mode={mode} />
+
+            <PostContent post={post} />
+          </div>
+        </>
       )}
 
       <div style={{ flex: "0 0 auto" }}>

@@ -10,17 +10,14 @@ export type PostActionsProps = {
   post: Post;
   currentUser: UserPreview;
   onCommentClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
-  // limit: number;
 };
 
 export default function PostActions({
   post,
   currentUser,
   onCommentClick,
-}: // limit,
-PostActionsProps) {
+}: PostActionsProps) {
   const isLiked = post.likedBy?.some((u) => u.id === currentUser.id);
-  // const toggleLike = useToggleCommentLike(post.id);
   const toggleLike = useToggleLike(post.id, currentUser);
 
   return (
@@ -59,8 +56,8 @@ PostActionsProps) {
         <CommentForm postId={post.id} className="max-w-lg  " />
       </div>
 
-      <div>
-        <span className="u-text-tertiary u-text-xs">
+      <div className="mb-xl">
+        <span className="u-text-tertiary u-text-xs ">
           Posted on {new Date(post.createdAt).toLocaleString()}
         </span>
       </div>

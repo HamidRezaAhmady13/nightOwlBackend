@@ -35,7 +35,7 @@ services:
   backend:
     build:
       context: ./back
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.prod
     container_name: social-backend
     restart: unless-stopped
     ports:
@@ -54,8 +54,7 @@ services:
   frontend:
     build:
       context: ./front
-      #dockerfile: Dockerfile # we'll provide one below
-      dockerfile: Dockerfile.dev   
+      dockerfile: Dockerfile.prod   
     container_name: social-frontend
     restart: unless-stopped
     ports:
@@ -65,27 +64,5 @@ services:
       WATCHPACK_POLLING: true   
     #depends_on:
       #- backend
-    develop:
-      watch:
-        - path: ./front
-          action: sync
-          target: /app
-          ignore:
-            - node_modules/
-            - .next/
-  # ----------------- pgAdmin (optional) -----------------
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: social-pgadmin
-    restart: unless-stopped
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@admin.com
-      PGADMIN_DEFAULT_PASSWORD: admin
-    ports:
-      - "5050:80"
-    depends_on:
-      - postgres
-
-volumes:
-  postgres_data:
-  redis_data:
+ 
+  
