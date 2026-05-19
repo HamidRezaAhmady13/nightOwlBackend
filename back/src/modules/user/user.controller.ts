@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  Logger,
   NotFoundException,
   Param,
   Patch,
@@ -93,7 +94,6 @@ export class UserController {
   @UseInterceptors(
     FileInterceptor('avatar', {
       storage: diskStorage({
-        // destination: process.env.UPLOAD_PATH || './uploads',
         destination: (req, file, cb) => {
           const base = process.env.UPLOAD_PATH || './uploads';
           const avatarsPath = path.join(base, 'avatars');
@@ -113,23 +113,22 @@ export class UserController {
     @Body() updateDto: UpdateUserDto,
     @CurrentUser() currentUser: User,
   ) {
-    const avatarUrl = avatar
-      ? `/uploads/avatars/${avatar.filename}`
-      : undefined;
+    const payload: Partial<UpdateUserDto> = { ...updateDto };
 
-    // const sanitizedDto = Object.fromEntries(
-    //   Object.entries(updateDto).filter(
-    //     ([_, value]) => value !== '' && value !== null && value !== undefined,
-    //   ),
-    // );
-
-    const payload: Partial<UpdateUserDto> = {
-      // ...sanitizedDto,
-      ...updateDto,
-      ...(avatarUrl && { avatarUrl }),
-    };
+    if (avatar) {
+      payload.avatarUrl = `/uploads/avatars/${avatar.filename}`;
+    }
 
     return this.userService.updateUser(currentUser.id, payload);
+  }
+
+  @Delete('me/avatar')
+  async removeAvatar(@CurrentUser() currentUser: User) {
+    new Logger.log('update', 'payload');
+    await this.userService.updateUser(currentUser.id, {
+      avatarUrl: null,
+    } as any);
+    return { message: 'Avatar removed' };
   }
 
   @Get('profile')

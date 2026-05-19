@@ -27,6 +27,7 @@ export type UpdateUserFormData = Omit<
   "id" | "following" | "avatarUrl"
 > & {
   avatarUrl: File | null;
+  removeAvatar?: boolean;
 };
 export type UpdateUserFormErrors = Partial<
   Record<keyof UpdateUserFormData, string>

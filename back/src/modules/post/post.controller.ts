@@ -2,10 +2,12 @@ import {
   Body,
   Controller,
   DefaultValuePipe,
+  Delete,
   Get,
   NotFoundException,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   Query,
   UnauthorizedException,
@@ -95,9 +97,22 @@ export class PostController {
   @Get(':id')
   async getPostById(@Param('id') id: string) {
     const post = await this.postService.getPost(id);
-    // console.log(id);
 
     if (!post) throw new NotFoundException('Post not found');
     return post;
+  }
+
+  @Delete(':id')
+  async deletePostById(@Param('id') id: string, @CurrentUser() user: User) {
+    await this.postService.deletePost(id, user.id);
+  }
+
+  @Patch(':id')
+  async updatePost(
+    @Param('id') id: string,
+    @Body('content') content: string,
+    @CurrentUser() user: User,
+  ) {
+    return this.postService.updatePost(id, { content }, user.id);
   }
 }

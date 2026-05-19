@@ -1,10 +1,10 @@
 "use client";
 
-import { useParams } from "next/navigation";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useParams, useSearchParams } from "next/navigation";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import Button from "@/features/components/shared/Button";
-import { User, UserPreview } from "@/features/types"; // <-- ensure UserPreview exists
+import { UserPreview } from "@/features/types"; // <-- ensure UserPreview exists
 import { UserHeader } from "@/features/components/header";
 import Spinner from "@/features/components/shared/Spinner";
 import PostsGrid from "@/features/components/posts/PostGrid";
@@ -13,8 +13,8 @@ import { getUserHeaderProps } from "@/features/utils/profile";
 import api from "@/features/lib/api";
 import { useCurrentUser } from "@/features/components/AuthContext";
 import { queryKeys } from "@/features/utils/queryKeys";
-import getToken from "@/features/lib/getMeAndUsers";
-// import { token } from "@/features/lib/getMe";
+import { useFollowUser } from "@/features/hooks/useFollowUser";
+import { useUnfollowUser } from "@/features/hooks/useUnfollowUser";
 
 function decodeSafe(u?: string) {
   if (!u) return u;
@@ -26,12 +26,15 @@ function decodeSafe(u?: string) {
 }
 
 export default function UserProfilePage() {
+  const searchParams = useSearchParams();
+
   const params = useParams();
   const rawUsername = params?.username;
   const username = Array.isArray(rawUsername)
     ? rawUsername[0]
     : (rawUsername ?? undefined);
 
+  const refreshKey = searchParams.get("refresh") || "";
   const decodedUsername = decodeSafe(username);
   if (!decodedUsername) return <p>User not found.</p>;
 
@@ -56,108 +59,16 @@ export default function UserProfilePage() {
       )
     : false;
 
-  const followMutation = useMutation({
-    mutationFn: async ({ username }: { username: string }) => {
-      const res = await api.post(
-        `/users/${encodeURIComponent(username)}/follow`,
-      );
-      return res;
-    },
-    onMutate: async (vars) => {
-      await queryClient.cancelQueries({
-        queryKey: queryKeys.user.current(getToken() ?? ""),
-      });
-      const prev = queryClient.getQueryData<User | undefined>(
-        queryKeys.user.current(getToken() ?? ""),
-      );
-      // optimistic add
-      queryClient.setQueryData<User | undefined>(
-        queryKeys.user.current(getToken() ?? ""),
-        (old) =>
-          old
-            ? {
-                ...old,
-                following: [
-                  ...(old.following ?? []),
-                  { username: vars.username, id: `temp-${Date.now()}` },
-                ],
-              }
-            : old,
-      );
-      return { prev };
-    },
-    onError: (_err, _vars, ctx: any) => {
-      if (ctx?.prev)
-        queryClient.setQueryData(
-          queryKeys.user.current(getToken() ?? ""),
-          ctx.prev,
-        );
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.user.byUsername(decodedUsername),
-      });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.user.current(getToken() ?? ""),
-      });
-    },
-  });
+  const followMutation = useFollowUser(decodedUsername);
+  const unfollowMutation = useUnfollowUser(decodedUsername);
 
-  const unfollowMutation = useMutation({
-    mutationFn: async ({ username }: { username: string }) => {
-      const res = await api.delete(
-        `/users/${encodeURIComponent(username)}/unfollow`,
-      );
-
-      return res;
-    },
-    onMutate: async (vars) => {
-      await queryClient.cancelQueries({
-        queryKey: queryKeys.user.current(getToken() ?? ""),
-      });
-      const prev = queryClient.getQueryData<User | undefined>(
-        queryKeys.user.current(getToken() ?? ""),
-      );
-      // optimistic remove
-      queryClient.setQueryData<User | undefined>(
-        queryKeys.user.current(getToken() ?? ""),
-        (old) =>
-          old
-            ? {
-                ...old,
-                following: (old.following ?? []).filter(
-                  (u: UserPreview) => u.username !== vars.username,
-                ),
-              }
-            : old,
-      );
-      return { prev };
-    },
-    onError: (_err, _vars, ctx: any) => {
-      if (ctx?.prev)
-        queryClient.setQueryData(
-          queryKeys.user.current(getToken() ?? ""),
-          ctx.prev,
-        );
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.user.byUsername(decodedUsername),
-      });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.user.current(getToken() ?? ""),
-      });
-    },
-  });
-
-  // Button: disable while either mutation is running to prevent double clicks
   <Button
     label={isFollowing ? "Unfollow" : "Follow"}
     disabled={followMutation.isPending || unfollowMutation.isPending}
     onClick={() => {
       if (!decodedUsername) return;
-      if (isFollowing) unfollowMutation.mutate({ username: decodedUsername });
-      else followMutation.mutate({ username: decodedUsername });
+      if (isFollowing) unfollowMutation.mutate();
+      else followMutation.mutate();
     }}
   />;
 
@@ -175,16 +86,13 @@ export default function UserProfilePage() {
             label={isFollowing ? "Unfollow" : "Follow"}
             onClick={() => {
               if (!decodedUsername) return;
-              if (isFollowing) {
-                unfollowMutation.mutate({ username: decodedUsername });
-              } else {
-                followMutation.mutate({ username: decodedUsername });
-              }
+              if (isFollowing) unfollowMutation.mutate();
+              else followMutation.mutate();
             }}
           />
         )}
       <UserHeader {...headerProps} />
-      <PostsGrid username={decodedUsername} />
+      <PostsGrid username={decodedUsername} key={refreshKey} />
       <OverlayRoutes />
     </div>
   );

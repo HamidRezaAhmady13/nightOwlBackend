@@ -34,7 +34,11 @@ export class UpdateUserDto {
     typeof value === 'string' && value.trim() === '' ? undefined : value,
   )
   @IsUrl({ require_protocol: false })
-  avatarUrl?: string;
+  avatarUrl?: string | null;
+
+  @IsOptional()
+  @IsString()
+  avatarAction?: string;
 
   @IsOptional()
   @Transform(({ value }) =>

@@ -46,6 +46,7 @@ bootstrap();
 // npx ts-node -r tsconfig-paths/register src/main.ts
 // u1f409 dragon ,1F923 laughter
 // 🐯 Tiger: U+1F42F,🐦‍🔥 Phoenix: U+1F426 U+200D U+1F525 ⚔️ Crossed Swords: U+2694 + U+FE0F
+// ☯️ — U+262F followed by the variation selector U+FE0F
 
 // openssl rand -base64 32
 //  Midcontract

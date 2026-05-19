@@ -5,8 +5,12 @@ import FormInput from "@/features/components/forms/FormInput";
 import Spinner from "@/features/components/shared/Spinner";
 import FileUploadInput from "@/features/components/forms/FileUploadInput";
 import { useEditProfile } from "@/features/hooks/useEditProfile";
+import { useCurrentUser } from "@/features/components/AuthContext";
+import { useState } from "react";
+import ConfirmModal from "@/features/components/shared/ConfirmModal";
 
 export default function EditProfilePage() {
+  const [showRemoveModal, setShowRemoveModal] = useState(false);
   const {
     formData,
     errors,
@@ -14,8 +18,10 @@ export default function EditProfilePage() {
     handleChange,
     handleSubmit,
     handleFileChange,
+    setRemoveAvatar,
+    removeAvatarMutation,
   } = useEditProfile();
-
+  const { user: currentUser } = useCurrentUser();
   if (isLoading) return <Spinner />;
 
   return (
@@ -70,6 +76,34 @@ export default function EditProfilePage() {
               handleFileChange(file);
             }}
           />
+          {currentUser?.avatarUrl && (
+            <Button
+              intent={"invisible"}
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                setShowRemoveModal(true);
+              }}
+              size={"md"}
+              height={"md"}
+              className="u-text-xs u-bg-red u-text-sharp mt-md hover:u-bg-red-deep "
+            >
+              Remove profile photo
+            </Button>
+          )}
+
+          {showRemoveModal && (
+            <ConfirmModal
+              title="Remove Avatar"
+              message="Are you sure you want to remove your profile photo? This will use the default avatar."
+              onConfirm={() => {
+                setShowRemoveModal(false);
+                removeAvatarMutation.mutate();
+              }}
+              onCancel={() => setShowRemoveModal(false)}
+              isLoading={false}
+            />
+          )}
         </div>
         <div className="u-flex-center py-xl">
           <Button

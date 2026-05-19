@@ -60,6 +60,15 @@ export function useSignupForm() {
       return;
     }
 
+    if (form.password !== form.passwordConfirm) {
+      setErrors((prev) => ({
+        ...prev,
+        passwordConfirm: "Passwords do not match",
+      }));
+      toast.error("Passwords do not match");
+      return;
+    }
+
     setLoading(true);
     try {
       const response = await api.post("/auth/signup", {

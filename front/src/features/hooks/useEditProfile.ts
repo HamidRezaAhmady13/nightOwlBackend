@@ -22,6 +22,7 @@ export function useEditProfile() {
   const queryClient = useQueryClient();
   const router = useRouter();
   const { user: currentUser } = useCurrentUser();
+  const [removeAvatar, setRemoveAvatar] = useState(false);
   const [formData, setFormData] = useState<UpdateUserFormData>({
     username: "",
     email: "",
@@ -29,6 +30,7 @@ export function useEditProfile() {
     location: "",
     website: "",
     avatarUrl: null,
+    removeAvatar: false,
   });
   const [errors, setErrors] = useState<UpdateUserFormErrors>({});
 
@@ -61,6 +63,7 @@ export function useEditProfile() {
       queryClient.invalidateQueries({
         queryKey: queryKeys.user.byUsername(updatedUser.username),
       });
+      setRemoveAvatar(false);
       toast.success("Profile updated!");
       router.push(`/users/${updatedUser!.username}`);
     },
@@ -82,7 +85,12 @@ export function useEditProfile() {
   };
 
   const handleFileChange = (file: File | null) => {
+    // setFormData((prev) => ({ ...prev, avatarUrl: file }));
     setFormData((prev) => ({ ...prev, avatarUrl: file }));
+    if (file) {
+      setRemoveAvatar(false);
+    }
+    // setRemoveAvatar(false);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -122,7 +130,6 @@ export function useEditProfile() {
     if (formData.avatarUrl) {
       payload.append("avatar", formData.avatarUrl);
     }
-
     if (payload.keys().next().done) {
       toast("No changes to save");
       return;
@@ -139,6 +146,21 @@ export function useEditProfile() {
     return res.data;
   }
 
+  const removeAvatarMutation = useMutation({
+    mutationFn: () => api.delete("/users/me/avatar"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.user.current(getToken() ?? ""),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.user.byUsername(currentUser!.username),
+      });
+      toast.success("Avatar removed");
+      router.push(`/users/${currentUser!.username}`);
+    },
+    onError: () => toast.error("Failed to remove avatar"),
+  });
+
   return {
     formData,
     setFormData,
@@ -147,5 +169,7 @@ export function useEditProfile() {
     handleChange,
     handleSubmit,
     handleFileChange,
+    setRemoveAvatar,
+    removeAvatarMutation,
   };
 }

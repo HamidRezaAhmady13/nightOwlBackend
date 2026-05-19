@@ -26,6 +26,12 @@
   .u-bg-transparent {
     @apply bg-transparent dark:bg-transparent;
   }
+  .u-bg-red {
+    @apply bg-red-500 dark:bg-red-700;
+  }
+  .u-bg-red-deep {
+    @apply bg-red-400 dark:bg-red-600;
+  }
   /* Background */
 
   /* flex----------------- */
@@ -66,6 +72,9 @@
 
   .u-text-btn {
     @apply text-cobalt-50   dark:text-amber-50;
+  }
+  .u-text-sharp {
+    @apply text-zinc-950 dark:text-zinc-50; /*12.6:1   10.95:1 */
   }
   .u-text-primary {
     @apply text-zinc-900/90 dark:text-zinc-100/95; /*12.6:1   10.95:1 */
