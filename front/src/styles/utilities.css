@@ -163,4 +163,26 @@
     @apply ring-2 ring-focus-dark ring-offset-dark;
   }
   /* focus */
+
+  .username-truncate {
+    /* @apply */
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-block;
+    vertical-align: middle;
+  }
 }
+/* 
+rsync -P 9011 backend.tar.gz root@87.107.146.85:/root/
+rsync -P 9011 frontend.tar.gz root@87.107.146.85:/root/
+rsync -P 9011 postgres.tar.gz root@87.107.146.85:/root/
+rsync -P 9011 redis.tar.gz root@87.107.146.85:/root/ 
+
+rsync -avP -e 'ssh -p 9011' postgres.tar.gz root@87.107.146.85:/root/
+rsync -avP -e 'ssh -p 9011' redis.tar.gz root@87.107.146.85:/root/
+rsync -avP -e 'ssh -p 9011' frontend.tar.gz root@87.107.146.85:/root/
+rsync -avP -e 'ssh -p 9011' backend.tar.gz root@87.107.146.85:/root/
+
+*/

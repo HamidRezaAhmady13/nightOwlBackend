@@ -1,0 +1,75 @@
+services:
+  # ---------- Database ----------
+  postgres:
+    image: postgres:15-alpine
+    container_name: social-postgres-dev
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: social_app
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---------- Redis ----------
+  redis:
+    image: redis:7-alpine
+    container_name: social-redis-dev
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_dev_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---------- Backend (NestJS) ----------
+  backend:
+    build:
+      context: ./back
+      dockerfile: Dockerfile.dev # <-- your dev dockerfile (must exist)
+    container_name: social-backend-dev
+    image: soicalapp-backend-dev:latest
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    env_file:
+      - ./back/.env.development # localhost values here
+    volumes:
+      - ./back:/app # live source mount for hot‑reload
+      - /app/node_modules # anonymous volume prevents overwrite
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # ---------- Frontend (Next.js) ----------
+  frontend:
+    build:
+      context: ./front
+      dockerfile: Dockerfile.dev # <-- your dev dockerfile
+    image: soicalapp-frontend-dev:latest
+    container_name: social-frontend-dev
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./front/.env.development # localhost API + socket URLs
+    volumes:
+      - ./front:/app # live source for HMR
+      - /app/node_modules
+    depends_on:
+      - backend
+
+volumes:
+  postgres_dev_data:
+  redis_dev_data:

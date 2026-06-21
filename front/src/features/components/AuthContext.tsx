@@ -6,11 +6,12 @@ import {
   useEffect,
   useState,
 } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "../utils/queryKeys";
 import api from "../lib/api";
 import { User } from "../types";
 import getToken from "../lib/getMeAndUsers";
+import { usePathname, useRouter } from "next/navigation";
 
 type AuthContextValue = {
   user: User | null;
@@ -22,6 +23,8 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const pathname = usePathname();
   const [token, setToken] = useState<string | null>(getToken());
   const [isTokenValidated, setIsTokenValidated] = useState(false);
   // const queryClient = useQueryClient();
@@ -41,6 +44,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       window.removeEventListener("token-changed", syncToken);
     };
   }, [syncToken]);
+
+  useEffect(() => {
+    const publicPaths = ["/login", "/signup", "/auth/callback"];
+    if (!token && !publicPaths.some((p) => pathname.startsWith(p))) {
+      router.replace("/login");
+    }
+  }, [token, pathname, router]);
 
   const { data, isLoading } = useQuery<User | null>({
     queryKey: queryKeys.user.current(token ?? ""),

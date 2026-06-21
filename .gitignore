@@ -4,3 +4,6 @@ dist/
 *.env.*
 uploads/
 postgres_data/
+*.tar.gz
+social-media-backend@0.0.1
+npx

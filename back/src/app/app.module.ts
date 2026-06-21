@@ -1,7 +1,7 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ServeStaticModule } from '@nestjs/serve-static';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import * as Joi from 'joi';
 
 import { RedisModule } from 'src/core/redis/redis.module';
@@ -57,24 +57,25 @@ import { RequestLoggerMiddleware } from 'src/common/middleware/request-logger.mi
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (cs: ConfigService) => ({
-        type: 'postgres',
-        host: cs.get('DB_HOST'),
-        port: +cs.get('DB_PORT'),
-        username: cs.get('DB_USER'),
-        password: cs.get('DB_PASS'),
-        database: cs.get('DB_NAME'),
-        entities: [
-          User,
-          Post,
-          Comment,
-          RefreshToken,
-          Media,
-          NotificationEntity,
-        ],
-        synchronize: true,
-        autoLoadEntities: true,
-      }),
+      useFactory: (cs: ConfigService) =>
+        ({
+          type: 'postgres',
+          host: cs.get('DB_HOST'),
+          port: +cs.get('DB_PORT'),
+          username: cs.get('DB_USER'),
+          password: cs.get('DB_PASSWORD'),
+          database: cs.get('DB_NAME'),
+          entities: [
+            User,
+            Post,
+            Comment,
+            RefreshToken,
+            Media,
+            NotificationEntity,
+          ],
+          synchronize: true,
+          autoLoadEntities: true,
+        }) as TypeOrmModuleOptions,
     }),
     ServeStaticModule.forRoot({
       // rootPath: '/var/storage/uploads',

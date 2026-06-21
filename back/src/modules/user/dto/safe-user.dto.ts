@@ -13,11 +13,11 @@ export class SafeUserDto {
   @Expose()
   @Transform(({ obj }) => {
     const raw = obj.avatarUrl;
-    if (!raw) return '/uploads/default-avatar.png';
+    if (!raw || raw.includes('default-avatar.png')) return null;
     if (raw.startsWith('http')) return raw;
     return `${BASE}${raw}`;
   })
-  avatarUrl: string;
+  avatarUrl: string | null;
 
   @Expose() bio?: string;
   @Expose() location?: string;
@@ -30,10 +30,7 @@ export class SafeUserDto {
       (u): MiniUser => ({
         id: String(u.id),
         username: u.username,
-        // avatarUrl:
-        //   u.avatarUrl && u.avatarUrl.startsWith('http')
-        //     ? u.avatarUrl
-        //     : `${BASE}${u.avatarUrl || DEFAULT_AVATAR}`,
+
         avatarUrl:
           u.avatarUrl && u.avatarUrl.startsWith('http')
             ? u.avatarUrl

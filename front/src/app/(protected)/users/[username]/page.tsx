@@ -73,7 +73,7 @@ export default function UserProfilePage() {
   />;
 
   if (isLoading) return <Spinner />;
-  if (!profileUser) return <p>User not found.</p>;
+  if (!profileUser) return <p className="mt-40">User not found.</p>;
 
   const headerProps = getUserHeaderProps(profileUser);
 

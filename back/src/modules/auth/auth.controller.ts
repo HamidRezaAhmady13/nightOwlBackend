@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Patch,
   Post,
   Req,
   Res,
@@ -12,11 +13,16 @@ import { ConfigService } from '@nestjs/config';
 import { AuthGuard } from '@nestjs/passport';
 import { Request, Response } from 'express';
 import { DEFAULT_REFRESH_MS } from 'src/common/constants';
+import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { AuthenticatedRequest } from 'src/common/interfaces/user-request.interface';
 import { LineLogger } from 'src/common/utils/lineLogger';
 import { AuthService } from 'src/modules/auth/auth.service';
-import { JwtRefreshGuard } from 'src/modules/auth/guards/jwt-auth.guard';
+import {
+  JwtAuthGuard,
+  JwtRefreshGuard,
+} from 'src/modules/auth/guards/jwt-auth.guard';
 import { CreateUserDto } from 'src/modules/user/dto/create-user.dto';
+import { User } from '../user/entity/user.entity';
 
 @Controller('auth')
 export class AuthController {
@@ -33,14 +39,15 @@ export class AuthController {
   }
 
   private cookieOptions(httpOnly: boolean, maxAge?: number) {
-    const secure = this.config.get<boolean>('COOKIE_SECURE', false);
+    const secure = this.config.get<string>('COOKIE_SECURE', 'false') === 'true';
     const sameSite = secure ? ('none' as const) : ('lax' as const);
+    const domain = this.config.get<string>('COOKIE_DOMAIN') || undefined;
     const opts: any = {
       httpOnly,
       secure,
       sameSite,
       path: '/',
-      domain: 'localhost',
+      domain,
     };
     if (typeof maxAge === 'number') opts.maxAge = maxAge;
     return opts;
@@ -79,6 +86,11 @@ export class AuthController {
       'refresh',
       refresh_token,
       this.cookieOptions(true, this.refreshTtlMs),
+    );
+    res.cookie(
+      'access',
+      access_token,
+      this.cookieOptions(false, 15 * 60 * 1000),
     );
     return { access_token };
   }
@@ -138,7 +150,7 @@ export class AuthController {
       tokens = await this.authService.handleProviderLogin(user);
     } catch (err) {
       console.error('googleAuthRedirect: handleProviderLogin failed', {
-        message: err?.message ?? err,
+        message: (err as any)?.message ?? err,
       });
       throw new UnauthorizedException('failed to process provider login');
     }
@@ -159,4 +171,16 @@ export class AuthController {
 
     return res.redirect(redirectUrl);
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('change-password')
+  async changePassword(
+    @CurrentUser() user: User,
+    @Body('oldPassword') oldPassword: string,
+    @Body('newPassword') newPassword: string,
+  ) {
+    await this.authService.changePassword(user.id, oldPassword, newPassword);
+    return { message: 'Password changed successfully' };
+  }
 }
+// hamidraven123456@gmail.com

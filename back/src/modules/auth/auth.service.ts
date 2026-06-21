@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   UnauthorizedException,
@@ -91,18 +92,6 @@ export class AuthService {
       username = `${prefix}_${random}`;
     }
 
-    // const newUser = await this.userService.createUser({
-    //   ...createUserDto,
-    //   username,
-    //   password: hashedPassword,
-    //   provider: 'local',
-    // });
-    // // return this.createTokens(newUser.id);
-    // return {
-    //   ...(await this.createTokens(newUser.id)),
-    //   username: newUser.username as string,
-    // };
-
     try {
       const newUser = await this.userService.createUser({
         ...createUserDto,
@@ -110,6 +99,7 @@ export class AuthService {
         password: hashedPassword,
         provider: 'local',
       });
+      await this.userService.followUser(newUser.id, 'ShowcaseUser');
       return {
         ...(await this.createTokens(newUser.id)),
         username: newUser.username as string,
@@ -208,7 +198,7 @@ export class AuthService {
       // This fallback is optional and can be removed if strict rotation is required
       new LineLogger('refresh').error(
         'Rotation failed, fallback to latest',
-        err?.message ?? String(err),
+        (err as any)?.message ?? String(err),
       );
       throw new UnauthorizedException('REFRESH_TOKEN_EXPIRED');
     }
@@ -231,5 +221,28 @@ export class AuthService {
       },
     );
     return { access_token, refresh_token, refreshJti: newJti };
+  }
+
+  async changePassword(
+    userId: string,
+    oldPassword: string,
+    newPassword: string,
+  ) {
+    const user = await this.userService.findByIdWithPassword(userId);
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+    if (user.provider !== 'local' || !user.password) {
+      throw new BadRequestException(
+        'Cannot change password for OAuth accounts without a local password',
+      );
+    }
+
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) {
+      throw new UnauthorizedException('Old password is incorrect');
+    }
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+    await this.userService.updatePassword(userId, hashedNewPassword);
   }
 }

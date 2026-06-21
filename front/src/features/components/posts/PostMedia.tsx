@@ -55,8 +55,6 @@ export default function PostMedia({
     if (container) videoRef.current = container.querySelector("video");
   }, [post.id]);
 
-  console.log(post);
-
   const posterImg = poster ? `${API_URL}${poster.url}` : undefined;
   const known = poster ? { w: 1200, h: 900 } : undefined;
   const isVertical = known ? known.h > known.w : false;

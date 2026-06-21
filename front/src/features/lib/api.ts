@@ -85,9 +85,20 @@ api.interceptors.response.use(
     };
     const msg = extractMessage(err);
 
-    // Access expired → queue + single-flight refresh
-    if (err.response?.status === 401 && msg === "ACCESS_TOKEN_EXPIRED") {
-      // Start refresh once
+    // Never retry /auth/refresh itself – avoids infinite loop
+    if (originalRequest.url === "/auth/refresh") {
+      return Promise.reject(err);
+    }
+
+    // If the refresh token itself is gone, immediate logout
+    if (err.response?.status === 401 && isRefreshExpired(msg)) {
+      localStorage.removeItem("token");
+      window.location.href = "/login";
+      return Promise.reject(err);
+    }
+
+    // Any other 401 → try to refresh the access token
+    if (err.response?.status === 401) {
       if (!refreshing) {
         refreshing = doRefresh()
           .then((token) => {
@@ -95,17 +106,19 @@ api.interceptors.response.use(
             requestQueue = [];
             return token;
           })
-          .catch((error) => {
+          .catch(() => {
+            // Refresh failed → no valid session → go to login
             requestQueue.forEach((resolve) => resolve(undefined));
             requestQueue = [];
-            throw error;
+            localStorage.removeItem("token");
+            window.location.href = "/login";
+            return undefined;
           })
           .finally(() => {
             refreshing = null;
           });
       }
 
-      // Enqueue this failed request; it will retry after refresh resolves
       return new Promise((resolve) => {
         requestQueue.push((token?: string) => {
           if (token) {
@@ -122,18 +135,9 @@ api.interceptors.response.use(
       });
     }
 
-    // Refresh token gone → logout
-    if (err.response?.status === 401 && isRefreshExpired(msg)) {
-      try {
-        // localStorage.removeItem("token");
-      } finally {
-        window.location.href = "/login";
-      }
-      return Promise.reject(err);
-    }
-
     return Promise.reject(err);
   },
 );
 
 export default api;
+// test21@gmail.com

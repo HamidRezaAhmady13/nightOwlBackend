@@ -10,6 +10,7 @@ import { observePlayersAndApplyAccent } from "@/features/utils/observePlayers";
 import { useLogout } from "@/features/hooks/useLogout";
 import { useUpdateTheme } from "@/features/hooks/useUpdateTheme";
 import { useCurrentUser } from "../AuthContext";
+import { GeneralLink } from "../shared/GeneralLink";
 
 function UserDropdown() {
   const router = useRouter();
@@ -53,35 +54,28 @@ function UserDropdown() {
   }, []);
 
   const toggleTheme = () => {
-    // compute from DOM (stateless) for maximum reliability
     const currentlyDark = document.documentElement.classList.contains("dark");
     const newTheme = currentlyDark ? "light" : "dark";
     const color = newTheme === "dark" ? "#4f46e5" : "#ffa000";
 
-    // immediate UI update
     document.documentElement.classList.toggle("dark", newTheme === "dark");
     document.documentElement.style.setProperty("--player-accent", color);
 
     document.documentElement.style.setProperty("--tuby-primary-color", color);
     updatePlayerAccent(color);
 
-    // notify listeners (PlayerThemed now listens for this simple event)
     try {
       window.dispatchEvent(new Event("theme:changed"));
-    } catch (e) {
-      /* ignore in non-window envs */
-    }
+    } catch (e) {}
 
     // persist
     document.cookie = `theme=${newTheme}; path=/; SameSite=lax`;
-    updateTheme(newTheme); // fire-and-forget; add error handling if you want
+    updateTheme(newTheme);
 
-    document.querySelectorAll(".tuby-seek-bar .tuby-progress").forEach((n) => {
-      // if (n instanceof HTMLElement)
-      // n.style.setProperty("background", color, "important");
-    });
+    document
+      .querySelectorAll(".tuby-seek-bar .tuby-progress")
+      .forEach((n) => {});
 
-    // keep local state in sync for button label
     setIsDark(newTheme === "dark");
   };
 
@@ -127,6 +121,14 @@ function UserDropdown() {
         size={"md"}
         height={"md"}
       />
+      <Button
+        className="w-full"
+        size={"md"}
+        height={"md"}
+        onClick={() => router.push(`/change-password`)}
+      >
+        Change Password
+      </Button>
       <Button
         className="w-full"
         onClick={toggleTheme}

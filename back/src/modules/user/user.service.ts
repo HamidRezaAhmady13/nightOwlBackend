@@ -374,15 +374,33 @@ export class UserService {
     };
 
     const saved = await this.userRepo.save(user);
-    await this.redis.del(`user:${userId}`); // <<< clear stale cache
+    await this.redis.del(`user:${userId}`);
     return saved;
   }
 
-  // user.service.ts
-  async findByEmailWithPassword(email: string) {
+  // async findByIdWithPassword(userId: string): Promise<User | null> {
+  //   return this.userRepo.findOne({
+  //     where: { id: userId },
+  //     select: ['id', 'email', 'password', 'provider'],
+  //   });
+  // }
+
+  async findByEmailWithPassword(email: string): Promise<User | null> {
     return this.userRepo.findOne({
       where: { email },
-      select: ['id', 'email', 'password', 'provider'], // include only needed fields
+      select: ['id', 'email', 'password', 'provider'],
     });
+  }
+
+  // Correct: search by ID (used by changePassword)
+  async findByIdWithPassword(userId: string): Promise<User | null> {
+    return this.userRepo.findOne({
+      where: { id: userId },
+      select: ['id', 'email', 'password', 'provider'],
+    });
+  }
+
+  async updatePassword(userId: string, hashedPassword: string): Promise<void> {
+    await this.userRepo.update(userId, { password: hashedPassword });
   }
 }

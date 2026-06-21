@@ -15,7 +15,7 @@ import { SocketService } from 'src/modules/socket/socket.service';
 @WebSocketGateway({
   path: '/socket.io',
   cors: {
-    origin: 'http://localhost:3000',
+    origin: ['http://localhost:3000', 'https://hamidreza-ahmadi.sbs'],
     credentials: true,
   },
 })
@@ -33,11 +33,12 @@ export class SocketGateway
 
   afterInit() {
     this.socketSvc.setServer(this.server);
-    this.logger.log('Socket.IO initialized');
+    this.logger.log('line32 Socket.IO initialized ');
   }
 
   async handleConnection(client: Socket) {
     try {
+      this.logger.log(`line37 Connection attempt from client ${client.id}`);
       let token =
         (client.handshake.auth && (client.handshake.auth as any).token) || null;
 
@@ -58,8 +59,13 @@ export class SocketGateway
       client.join(`user:${client.data.userId}`);
       this.socketSvc.registerSocket(client);
 
-      this.logger.log(`Client ${client.id} joined user:${client.data.userId}`);
+      this.logger.log(
+        `line58 Client ${client.id} joined user:${client.data.userId}`,
+      );
     } catch (err) {
+      this.logger.error(`Socket auth failed: ${(err as Error).message || err}`);
+      this.logger.error(JSON.stringify(err));
+
       client.emit('unauthorized');
       client.disconnect(true);
     }
@@ -67,6 +73,8 @@ export class SocketGateway
 
   handleDisconnect(client: Socket) {
     this.socketSvc.unregisterSocket(client);
-    this.logger.log(`Client disconnected: ${client.id}`);
+    this.logger.log(`line70 Client disconnected: ${client.id}`);
   }
 }
+// hamidraven1313@gmail.com
+// hamidraven1414@gmail.com

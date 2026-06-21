@@ -36,12 +36,13 @@ services:
     build:
       context: ./back
       dockerfile: Dockerfile.prod
+    image: soicalapp-backend:latest
     container_name: social-backend
     restart: unless-stopped
     ports:
       - "3001:3001"
     env_file:
-    - ./back/.env.production      
+      - ./back/.env.production
     volumes:
       - ./back/uploads:/app/uploads # for file uploads
     depends_on:
@@ -54,17 +55,17 @@ services:
   frontend:
     build:
       context: ./front
-      dockerfile: Dockerfile.prod   
+      dockerfile: Dockerfile.prod
+    env_file:
+      - ./front/.env.production
+    image: soicalapp-frontend:latest
     container_name: social-frontend
     restart: unless-stopped
     ports:
       - "3000:3000"
-    environment:
-      NEXT_PUBLIC_API_URL: http://localhost:3001 # internal Docker network
-      WATCHPACK_POLLING: true   
-    #depends_on:
-      #- backend
-      
+    depends_on:
+      - backend
+
 volumes:
   postgres_data:
   redis_data:

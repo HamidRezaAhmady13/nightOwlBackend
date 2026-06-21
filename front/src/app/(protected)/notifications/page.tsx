@@ -63,7 +63,7 @@ export default function NotificationsPage() {
 
   return (
     <>
-      <ul className="space-y-2">
+      <ul className="space-y-sm   mt-3xl">
         {notifications.map((ntf) => (
           <NotificationItem ntf={ntf} key={ntf.id} />
         ))}

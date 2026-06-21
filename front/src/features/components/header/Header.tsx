@@ -11,7 +11,6 @@ import { useCurrentUser } from "../AuthContext";
 
 export default function Header() {
   const { user: currentUser } = useCurrentUser();
-  console.log(currentUser);
 
   if (!currentUser) return null;
 
@@ -27,7 +26,7 @@ export default function Header() {
         {currentUser && (
           <>
             <Button
-              className={` h-full gap-md max-w-96 mt-0 z-50`}
+              className={` h-full gap-md min-w-80 max-w-96 mt-0 z-50`}
               size={"lg"}
               height={"lg"}
             >
@@ -38,7 +37,12 @@ export default function Header() {
                   size={34}
                 />
               </div>
-              <span className="u-text-md">{currentUser.username} </span>
+              <span
+                title={currentUser.username}
+                className="u-text-md username-truncate"
+              >
+                {currentUser.username}{" "}
+              </span>
             </Button>
             <UserDropdown />
           </>

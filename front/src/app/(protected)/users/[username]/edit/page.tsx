@@ -66,7 +66,7 @@ export default function EditProfilePage() {
           placeholder="Website"
           error={errors.website}
         />
-        <div className="pb-xl">
+        <div className="pb-xl ">
           <FileUploadInput
             name="media-upload"
             label="Choose Media"
@@ -75,23 +75,24 @@ export default function EditProfilePage() {
             onChange={(file) => {
               handleFileChange(file);
             }}
+            className="u-bg-deep"
           />
-          {currentUser?.avatarUrl && (
-            <Button
-              intent={"invisible"}
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                setShowRemoveModal(true);
-              }}
-              size={"md"}
-              height={"md"}
-              className="u-text-xs u-bg-red u-text-sharp mt-md hover:u-bg-red-deep "
-            >
-              Remove profile photo
-            </Button>
-          )}
-
+          {currentUser?.avatarUrl &&
+            currentUser?.avatarUrl !== "/uploads/default-avatar.png" && (
+              <Button
+                intent={"invisible"}
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setShowRemoveModal(true);
+                }}
+                size={"md"}
+                height={"md"}
+                className="u-text-xs u-bg-red u-text-sharp mt-md hover:u-bg-red-deep "
+              >
+                Remove profile photo
+              </Button>
+            )}
           {showRemoveModal && (
             <ConfirmModal
               title="Remove Avatar"

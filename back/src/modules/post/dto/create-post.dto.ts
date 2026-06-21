@@ -4,5 +4,4 @@ export class CreatePostDto {
   @IsOptional()
   @IsString()
   content?: string;
-  // content: string;
 }
