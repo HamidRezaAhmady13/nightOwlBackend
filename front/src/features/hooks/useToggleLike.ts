@@ -19,7 +19,10 @@ function toggleLikeForPost(post: Post, currentUser: UserPreview): Post {
   };
 }
 
-export function useToggleLike(postId: string, currentUser: UserPreview) {
+export function useToggleLike(
+  postId: string,
+  currentUser?: UserPreview | null,
+) {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -27,7 +30,8 @@ export function useToggleLike(postId: string, currentUser: UserPreview) {
       await api.post(`/posts/${postId}/toggle-like`);
     },
     onSuccess: () => {
-      queryKeys.posts.all,
+      if (!currentUser) return;
+      (queryKeys.posts.all,
         queryClient.setQueryData<PostsInfiniteData>(
           queryKeys.posts.all,
           (old) => {
@@ -37,12 +41,12 @@ export function useToggleLike(postId: string, currentUser: UserPreview) {
               pages: old.pages.map((page) => ({
                 ...page,
                 items: page.items.map((p) =>
-                  p.id === postId ? toggleLikeForPost(p, currentUser) : p
+                  p.id === postId ? toggleLikeForPost(p, currentUser) : p,
                 ),
               })),
             };
-          }
-        );
+          },
+        ));
 
       // 2) Update single post cache
       queryClient.setQueryData<Post>(queryKeys.posts.detail(postId), (old) => {

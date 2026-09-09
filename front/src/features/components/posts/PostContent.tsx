@@ -11,7 +11,7 @@ export function PostContent({
   isExpanded?: boolean;
 }) {
   const [expanded, setExpanded] = useState<boolean>(isExpanded);
-  const MAX_LENGTH = 120;
+  const MAX_LENGTH = 60;
   const contentToShow =
     !expanded && post.content.length > MAX_LENGTH
       ? post.content.slice(0, MAX_LENGTH) + "..."

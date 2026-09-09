@@ -6,9 +6,8 @@ import { AxiosError } from "axios";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { validateUpdateForm } from "../utils/validateUpdateForm";
-import { useCurrentUser } from "../components/AuthContext";
 import { queryKeys } from "../utils/queryKeys";
-import getToken from "../lib/getMeAndUsers";
+import { useUserStore } from "../store/userStore";
 
 type ApiErrorResponse = {
   statusCode?: number;
@@ -21,7 +20,7 @@ type ApiErrorResponse = {
 export function useEditProfile() {
   const queryClient = useQueryClient();
   const router = useRouter();
-  const { user: currentUser } = useCurrentUser();
+  const currentUser = useUserStore((s) => s.user);
   const [removeAvatar, setRemoveAvatar] = useState(false);
   const [formData, setFormData] = useState<UpdateUserFormData>({
     username: "",
@@ -55,7 +54,7 @@ export function useEditProfile() {
 
     onSuccess: (updatedUser) => {
       queryClient.invalidateQueries({
-        queryKey: queryKeys.user.current(getToken() ?? ""),
+        queryKey: queryKeys.user.current(),
       });
       queryClient.invalidateQueries({
         queryKey: queryKeys.user.byUsername(currentUser!.username),
@@ -150,7 +149,7 @@ export function useEditProfile() {
     mutationFn: () => api.delete("/users/me/avatar"),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: queryKeys.user.current(getToken() ?? ""),
+        queryKey: queryKeys.user.current(),
       });
       queryClient.invalidateQueries({
         queryKey: queryKeys.user.byUsername(currentUser!.username),

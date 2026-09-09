@@ -1,8 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../lib/api";
 import { queryKeys } from "../utils/queryKeys";
-import getToken from "../lib/getMeAndUsers";
-// import { token } from "../lib/getMe";
 
 export function useUpdateTheme() {
   const queryClient = useQueryClient();
@@ -17,16 +15,13 @@ export function useUpdateTheme() {
       return res.data;
     },
     onSuccess: (data) => {
-      queryClient.setQueryData(
-        queryKeys.user.current(getToken() ?? ""),
-        (old: any) => ({
-          ...old,
-          settings: {
-            ...old?.settings,
-            theme: data.settings.theme,
-          },
-        })
-      );
+      queryClient.setQueryData(queryKeys.user.current(), (old: any) => ({
+        ...old,
+        settings: {
+          ...old?.settings,
+          theme: data.settings.theme,
+        },
+      }));
     },
   });
 }

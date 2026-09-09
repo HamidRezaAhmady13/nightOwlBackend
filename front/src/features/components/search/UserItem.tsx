@@ -2,6 +2,7 @@ import Link from "next/link";
 import clsx from "clsx";
 import AvatarImage from "../shared/AvatarImage";
 import { User } from "@/features/types";
+import { BACKEND_BASE } from "@/features/lib/api";
 
 function UserItem({ user, onClick }: { user: User; onClick: () => void }) {
   return (
@@ -19,7 +20,17 @@ function UserItem({ user, onClick }: { user: User; onClick: () => void }) {
       )}
     >
       <div className="max-w-lg min-w-lg  ">
-        <AvatarImage src={user.avatarUrl} alt={user.username} size={20} />
+        <AvatarImage
+          src={
+            user.avatarUrl
+              ? user.avatarUrl.startsWith("http")
+                ? user.avatarUrl
+                : `${BACKEND_BASE}${user.avatarUrl}`
+              : `${BACKEND_BASE}/uploads/default-avatar.png`
+          }
+          alt={user.username}
+          size={20}
+        />
       </div>
       <span title={user.username} className=" block username-truncate">
         {user.username}

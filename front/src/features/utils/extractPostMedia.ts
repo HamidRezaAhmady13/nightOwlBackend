@@ -1,17 +1,64 @@
 import { Post } from "@/features/types";
 
+const PLAYABLE_VIDEO_EXTENSIONS = ["mp4", "webm", "ogg", "m4v"];
+
 export function getVideoVariants(post: Post) {
-  // first try processed variants (quality set, not "original")
+  const playable = (m: any) => {
+    const ext = getExtension(m.url);
+    return PLAYABLE_VIDEO_EXTENSIONS.includes(ext);
+  };
+
   const processed =
     post.media?.filter(
-      (m) => m.type === "video" && m.quality && m.quality !== "original",
+      (m) =>
+        m.type === "video" &&
+        m.quality &&
+        m.quality !== "original" &&
+        playable(m),
     ) || [];
 
   if (processed.length > 0) return processed;
 
-  // fallback to raw video files (no quality, or quality: "original")
-  return post.media?.filter((m) => m.type === "video") || [];
+  return post.media?.filter((m) => m.type === "video" && playable(m)) || [];
 }
+
+export function getPostFiles(post: Post) {
+  return (
+    post.media?.filter((m) => {
+      const ext = getExtension(m.url);
+      if (IMAGE_EXTENSIONS.includes(ext)) return false;
+      if (PLAYABLE_VIDEO_EXTENSIONS.includes(ext)) return false;
+      return true;
+    }) ?? []
+  );
+}
+
+// export function getPostFiles(post: Post) {
+//   return (
+//     post.media?.filter((m) => {
+//       const ext = getExtension(m.url);
+
+//       // exclude images and videos
+//       if (IMAGE_EXTENSIONS.includes(ext)) return false;
+//       if (VIDEO_EXTENSIONS.includes(ext)) return false;
+
+//       // otherwise treat as a file to share
+//       return true;
+//     }) ?? []
+//   );
+// }
+// export function getVideoVariants(post: Post) {
+//   // first try processed variants (quality set, not "original")
+//   const processed =
+//     post.media?.filter(
+//       (m) => m.type === "video" && m.quality && m.quality !== "original",
+//     ) || [];
+
+//   if (processed.length > 0) return processed;
+
+//   // fallback to raw video files (no quality, or quality: "original")
+//   return post.media?.filter((m) => m.type === "video") || [];
+// }
 
 export function getOriginalVideo(post: Post) {
   return post.media?.find(
@@ -82,17 +129,4 @@ function getExtension(url: string): string {
   return parts.length > 1 ? parts.pop()!.toLowerCase().split("?")[0] : "";
 }
 
-export function getPostFiles(post: Post) {
-  return (
-    post.media?.filter((m) => {
-      const ext = getExtension(m.url);
-
-      // exclude images and videos
-      if (IMAGE_EXTENSIONS.includes(ext)) return false;
-      if (VIDEO_EXTENSIONS.includes(ext)) return false;
-
-      // otherwise treat as a file to share
-      return true;
-    }) ?? []
-  );
-}
+//

@@ -2,7 +2,7 @@
 import clsx from "clsx";
 import { useRouter } from "next/navigation";
 
-import Spinner from "@/features/components/shared/Spinner";
+import Spinner, { Spinner2 } from "@/features/components/shared/Spinner";
 import Button from "@/features/components/shared/Button";
 import SearchItem from "@/features/components/search/UserItem";
 import { useSearch } from "@/features/hooks/useSearch";
@@ -30,7 +30,7 @@ export default function SearchPage() {
           Search results for "{query}"
         </h1>
         <div className="h-2xl  px-md py-sm  ">
-          {loading && <Spinner size={34} padding={false} />}
+          {loading && <Spinner2 size={34} padding={false} />}
         </div>
       </div>
 
@@ -72,7 +72,7 @@ export default function SearchPage() {
                     "mx-xs px-xs py-xs text-xs w-lg ",
                     item === page
                       ? "!text-amber-100 dark:!text-cobalt-200 "
-                      : "u-bg-transparent  !text-amber-800 dark:!text-cobalt-300"
+                      : "u-bg-transparent  !text-amber-800 dark:!text-cobalt-300",
                   )}
                 >
                   {item}
@@ -84,7 +84,7 @@ export default function SearchPage() {
                 >
                   {item}
                 </span>
-              )
+              ),
             )}
           </div>
 

@@ -2,8 +2,8 @@ import { useRouter } from "next/navigation";
 import Button from "../shared/Button";
 import AvatarImage from "../shared/AvatarImage";
 import { User } from "@/features/types";
-import { API_URL } from "@/features/lib/api";
-import { useCurrentUser } from "../AuthContext";
+import { BACKEND_BASE } from "@/features/lib/api";
+import { useUserStore } from "@/features/store/userStore";
 
 export const UserHeader = ({
   avatarUrl,
@@ -15,19 +15,19 @@ export const UserHeader = ({
   followersCount,
 }: User) => {
   const router = useRouter();
-  const { user: currentUser } = useCurrentUser();
+  const currentUser = useUserStore((s) => s.user);
+
   return (
-    <div className="u-flex-col-center gap-xl w-full ">
-      {/* Avatar */}
-      <div className="u-flex-between   w-full">
+    <main className="u-flex-col-center gap-xl w-full ">
+      <header className="u-flex-between   w-full">
         <div className="u-flex-center gap-md  ">
           <AvatarImage
             src={
               avatarUrl
                 ? avatarUrl.startsWith("http")
                   ? avatarUrl
-                  : `${API_URL}${avatarUrl}`
-                : "/uploads/default-avatar.png"
+                  : `${BACKEND_BASE}${avatarUrl}`
+                : `${BACKEND_BASE}/uploads/default-avatar.png`
             }
             alt="User Avatar"
             size={60}
@@ -44,19 +44,23 @@ export const UserHeader = ({
             />
           )}
         </div>
-      </div>
+      </header>
       <div className="u-flex-col-center gap-sm  space-y-sm">
-        <div className="u-flex-center gap-x-3xl">
+        <section aria-label="User stats" className="u-flex-center gap-x-3xl">
           <div>
             <p className="u-text-tertiary ">following : {followingsCount}</p>
           </div>
           <div>
             <p className="u-text-tertiary ">followers : {followersCount}</p>
           </div>
-        </div>
-        {bio && <p className="u-text-sm  u-text-primary">{bio}</p>}
+        </section>
+        {bio && (
+          <section aria-label="User bio">
+            <p className="u-text-sm  u-text-primary">{bio}</p>
+          </section>
+        )}
 
-        <div className="u-flex-center flex-wrap gap-md u-text-tertiary">
+        <address className="u-flex-center flex-wrap gap-md u-text-tertiary">
           {location && <span className="u-text-tertiary ">📍 {location}</span>}
           {website && (
             <a
@@ -68,8 +72,8 @@ export const UserHeader = ({
               🔗 {website}
             </a>
           )}
-        </div>
+        </address>
       </div>{" "}
-    </div>
+    </main>
   );
 };

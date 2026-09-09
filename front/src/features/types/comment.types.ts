@@ -56,7 +56,7 @@ export type CommentItemProps = CommentWithLikeState & {
     parentIdToSend: string;
   } | null;
   setReplyTo?: (
-    v: { immediateId: string; username: string; parentIdToSend: string } | null
+    v: { immediateId: string; username: string; parentIdToSend: string } | null,
   ) => void;
 };
 

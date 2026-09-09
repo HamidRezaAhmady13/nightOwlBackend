@@ -23,7 +23,7 @@ export default function PostDetailModal({
   if (isLoading)
     return (
       <PostModal onClose={onClose} ariaLabel="Loading post">
-        <Spinner />
+        {null}
       </PostModal>
     );
 

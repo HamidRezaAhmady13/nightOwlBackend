@@ -1,5 +1,3 @@
-export type UserPreview = Pick<User, "id" | "username" | "avatarUrl">;
-
 export type User = {
   id: string;
   email: string;
@@ -12,6 +10,8 @@ export type User = {
   followersCount?: number;
   followingsCount?: number;
 };
+
+export type UserPreview = Pick<User, "id" | "username" | "avatarUrl">;
 
 type SignupForm = Pick<User, "email"> & {
   password: string;

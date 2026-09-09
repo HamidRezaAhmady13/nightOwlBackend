@@ -4,8 +4,8 @@ import { AiOutlineBell, AiFillBell } from "react-icons/ai";
 import clsx from "clsx";
 import Link from "next/link";
 import { Url } from "next/dist/shared/lib/router/router";
-import { useCurrentUser } from "../AuthContext";
 import { useUnreadCount } from "@/features/hooks/useUnreadCount";
+import { useUserStore } from "@/features/store/userStore";
 
 type Props = {
   unread?: boolean;
@@ -13,10 +13,10 @@ type Props = {
 };
 
 export default function NotificationButton({ href }: Props) {
-  const { user } = useCurrentUser();
+  const currentUser = useUserStore((s) => s.user);
 
   // Step 1.1: Get unread count
-  const { data: unreadCount = 0, isLoading } = useUnreadCount(user?.id);
+  const { data: unreadCount = 0, isLoading } = useUnreadCount(currentUser?.id);
 
   // Step 1.2: Show loading state briefly
   if (isLoading) {

@@ -1,3 +1,4 @@
+import toast from "react-hot-toast";
 import { startRefreshInterval } from "../utils/startRefreshInterval";
 import { api, API_URL } from "./api";
 
@@ -7,14 +8,13 @@ export async function loginUser(email: string, password: string) {
 
   const access = res.data.access_token;
   if (access) {
-    localStorage.setItem("token", access);
+    api.defaults.headers.common["Authorization"] = `Bearer ${access}`;
     window.dispatchEvent(new Event("token-changed"));
   }
   startRefreshInterval();
 }
 
 export async function logoutUser() {
-  localStorage.removeItem("token");
   window.dispatchEvent(new Event("token-changed"));
   delete api.defaults.headers.common["Authorization"];
 
@@ -24,3 +24,11 @@ export async function logoutUser() {
 export function redirectToGoogleAuth() {
   window.location.href = `${API_URL}/auth/google`;
 }
+
+export const requireAuth = (actionName: string, currentUser: boolean) => {
+  if (!currentUser) {
+    toast.error(`Please log in to ${actionName}!`);
+    return false;
+  }
+  return true;
+};

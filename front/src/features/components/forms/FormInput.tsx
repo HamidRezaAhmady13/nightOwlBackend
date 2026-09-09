@@ -61,7 +61,6 @@ const FormInput = forwardRef<
         | HTMLTextAreaElement;
     });
 
-    // Auto-resize for textarea
     const handleInput = () => {
       if (textareaRef.current) {
         textareaRef.current.style.height = "auto";
@@ -98,7 +97,7 @@ const FormInput = forwardRef<
     );
 
     return (
-      <div className={clsx("space-y-xs", wrapperClassName)}>
+      <div className={clsx("space-y-xs  ", wrapperClassName)}>
         {multiline ? (
           <textarea
             ref={textareaRef as React.Ref<HTMLTextAreaElement>}
@@ -115,10 +114,17 @@ const FormInput = forwardRef<
             disabled={disabled}
             className={`${classes} ${className}  `}
             rows={rows}
-            autoFocus={autoFocus} // Pass autoFocus to textarea
-            onPointerDown={onPointerDown} // Pass onPointerDown to textarea
+            autoFocus={autoFocus}
+            onPointerDown={onPointerDown}
             spellCheck={false}
-            style={{ transition: "colors" }}
+            style={{
+              transition: "colors",
+              width: "100%",
+              maxWidth: "100%",
+              boxSizing: "border-box",
+              resize: "none",
+              fontSize: "1.6rem",
+            }}
           />
         ) : type === "file" ? (
           <input
@@ -131,7 +137,12 @@ const FormInput = forwardRef<
             disabled={disabled}
             className={`${classes} ${className}`}
             spellCheck={false}
-            style={{ transition: "colors" }}
+            style={{
+              transition: "colors",
+              // backgroundColor: "f53",
+              width: "100%",
+              boxSizing: "border-box",
+            }}
           />
         ) : (
           <input
@@ -151,7 +162,12 @@ const FormInput = forwardRef<
             autoFocus={autoFocus}
             onPointerDown={onPointerDown}
             spellCheck={false}
-            style={{ transition: "colors" }}
+            style={{
+              transition: "colors",
+              width: "100%",
+              maxWidth: "100%",
+              boxSizing: "border-box",
+            }}
           />
         )}
         <div className="h-xl">

@@ -10,6 +10,7 @@ export const inputStyles = cva(
     "u-focus-visible",
 
     "border",
+    "max-w-full",
 
     "file:transition-colors file:duration-slow file:ease-in-out",
     "file:mr-md file:py-sm file:px-md file:rounded file:border-0",
@@ -28,6 +29,7 @@ export const inputStyles = cva(
         true: "opacity-50 cursor-not-allowed",
       },
       size: {
+        xm: "px-sm py-xm text-xs",
         sm: "px-sm py-xm text-sm",
         md: "px-md py-sm text-base", // matches your base
         lg: "px-lg py-md text-lg",

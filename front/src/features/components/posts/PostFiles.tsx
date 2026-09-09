@@ -1,5 +1,5 @@
 // components/posts/PostFiles.tsx
-import { API_URL } from "@/features/lib/api";
+import { BACKEND_BASE } from "@/features/lib/api";
 import FileLink from "./FileLink";
 import { PostFilesProps } from "@/features/types";
 
@@ -9,7 +9,7 @@ export default function PostFiles({ files = [] }: PostFilesProps) {
   return (
     <div className="space-y-sm">
       {files.map((file) => (
-        <FileLink key={file.id} url={`${API_URL}${file.url}`} />
+        <FileLink key={file.id} url={`${BACKEND_BASE}${file.url}`} />
       ))}
     </div>
   );

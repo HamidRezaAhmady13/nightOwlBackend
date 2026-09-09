@@ -4,6 +4,7 @@ import { GeneralLink } from "../shared/GeneralLink";
 import CommentForm from "./CommentForm";
 import { useToggleCommentLike } from "@/features/hooks/useToggleCommentLike";
 import { useRepliesInfinite } from "@/features/hooks/useCommentsInfinite";
+import { BACKEND_BASE } from "@/features/lib/api";
 
 function CommentItem({
   id,
@@ -33,7 +34,7 @@ function CommentItem({
     parentIdToSend: string;
   } | null;
   setReplyTo?: (
-    v: { immediateId: string; username: string; parentIdToSend: string } | null
+    v: { immediateId: string; username: string; parentIdToSend: string } | null,
   ) => void;
 }) {
   const toggleLike = useToggleCommentLike(postId);
@@ -53,7 +54,7 @@ function CommentItem({
 
   return (
     <div
-      className={`u-flex-start-start flex-col gap-xs ${
+      className={`u-flex-start-start flex-col gap-xs  ${
         isReply ? "ml-[1px]" : ""
       }`}
     >
@@ -62,7 +63,11 @@ function CommentItem({
         className="u-focus-visible rounded flex justify-center items-center gap-sm"
       >
         <AvatarImage
-          src={author.avatarUrl || undefined}
+          src={
+            author.avatarUrl
+              ? `${BACKEND_BASE}${author.avatarUrl}`
+              : `${BACKEND_BASE}/uploads/default-avatar.png`
+          }
           alt={author.username}
           size={30}
         />
@@ -83,7 +88,7 @@ function CommentItem({
               toggleLike.mutate({
                 commentId: id,
                 liked: likedByCurrentUser,
-                parentCommentId: isReply ? parentIdForQuery ?? null : null,
+                parentCommentId: isReply ? (parentIdForQuery ?? null) : null,
               });
             }}
           >
@@ -116,7 +121,7 @@ function CommentItem({
         </div>
 
         {isExpanded && (
-          <div className="mt-md ml-lg border-l u-text-tertiary pl-md">
+          <div className="mt-md ml-lg border-l u-text-tertiary pl-md  ">
             {repliesLoading ? (
               <p className="text-xs u-text-tertiary">Loading replies...</p>
             ) : (
@@ -153,21 +158,23 @@ function CommentItem({
         )}
 
         {replyTo?.immediateId === id && (
-          <div className="mt-sm">
-            <CommentForm
-              autoFocus={true}
-              postId={postId}
-              parentCommentId={replyTo.parentIdToSend ?? replyTo.immediateId}
-              onSuccess={() => {
-                setReplyTo?.(null);
-                const parentId =
-                  replyTo?.parentIdToSend ?? replyTo?.immediateId;
-                if (parentId && !expandedMap?.[parentId]) {
-                  toggleExpanded?.(parentId);
-                }
-              }}
-              className="w-full"
-            />
+          <div className="mt-sm  ">
+            <div className="relative z-10">
+              <CommentForm
+                autoFocus={true}
+                postId={postId}
+                parentCommentId={replyTo.parentIdToSend ?? replyTo.immediateId}
+                onSuccess={() => {
+                  setReplyTo?.(null);
+                  const parentId =
+                    replyTo?.parentIdToSend ?? replyTo?.immediateId;
+                  if (parentId && !expandedMap?.[parentId]) {
+                    toggleExpanded?.(parentId);
+                  }
+                }}
+                className="w-full "
+              />
+            </div>
             <div className="u-text-secondary u-text-xs mt-xs flex">
               Replying to <strong className="pl-sm">{replyTo.username}</strong>
               <button

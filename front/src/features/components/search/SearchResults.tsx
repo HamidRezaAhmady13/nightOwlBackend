@@ -17,7 +17,7 @@ export function SearchResults({
   if (loading)
     return (
       <div className="u-flex-center min-h-[calc((3rem+0.5rem)*5-0.5rem)]">
-        <Spinner />
+        {null}
       </div>
     );
   if (users.length === 0) return <div className="p-sm ">No results</div>;

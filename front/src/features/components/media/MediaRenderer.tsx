@@ -5,12 +5,12 @@ import VideoPlayer from "./VideoPlayer";
 import { useEffect, useRef } from "react";
 import FocusAwarePlayer from "./FocusAwarePlayer";
 import FileLink from "../posts/FileLink";
-import { API_URL } from "@/features/lib/api";
+import { BACKEND_BASE } from "@/features/lib/api";
 
 function normalizeUrl(raw: string) {
   if (raw.startsWith("http")) return raw;
   const slash = raw.startsWith("/") ? "" : "/";
-  return `${API_URL}${slash}${raw}`;
+  return `${BACKEND_BASE}${slash}${raw}`;
 }
 
 export default function MediaRenderer({
@@ -49,17 +49,17 @@ export default function MediaRenderer({
   }, []);
 
   const videoVariants = media.filter(
-    (m) => m.type === "video" && m.quality !== "original"
+    (m) => m.type === "video" && m.quality !== "original",
   );
   const originalVideo = media.find(
-    (m) => m.type === "video" && m.quality === "original"
+    (m) => m.type === "video" && m.quality === "original",
   );
   const poster = media.find(
-    (m) => m.type === "image" && m.url.includes("thumbnail")
+    (m) => m.type === "image" && m.url.includes("thumbnail"),
   );
   const files = media.filter((m) => m.type === "file");
   const images = media.filter(
-    (m) => m.type === "image" && !m.url.includes("thumbnail")
+    (m) => m.type === "image" && !m.url.includes("thumbnail"),
   );
 
   return (
@@ -70,7 +70,7 @@ export default function MediaRenderer({
         images.map((img) => (
           <Image
             key={img.id}
-            src={`${API_URL}${img.url}`}
+            src={`${BACKEND_BASE}${img.url}`}
             alt="Post image"
             width={600}
             height={400}
@@ -84,9 +84,9 @@ export default function MediaRenderer({
             onActivate={onActivate}
             src={videoVariants.map((v) => ({
               quality: v.quality,
-              url: `${API_URL}${v.url}`,
+              url: `${BACKEND_BASE}${v.url}`,
             }))}
-            poster={poster ? `${API_URL}${poster.url}` : undefined}
+            poster={poster ? `${BACKEND_BASE}${poster.url}` : undefined}
             primaryColor="#84fc90"
           />
         </div>
@@ -94,12 +94,12 @@ export default function MediaRenderer({
         <div className="rounded-2xl overflow-hidden ">
           <VideoPlayer
             src={normalizeUrl(originalVideo.url)}
-            poster={poster ? `${API_URL}${poster.url}` : undefined}
+            poster={poster ? `${BACKEND_BASE}${poster.url}` : undefined}
           />
         </div>
       ) : null}
       {files.map((file) => (
-        <FileLink key={file.id} url={`${API_URL}${file.url}`} />
+        <FileLink key={file.id} url={`${BACKEND_BASE}${file.url}`} />
       ))}
     </div>
   );

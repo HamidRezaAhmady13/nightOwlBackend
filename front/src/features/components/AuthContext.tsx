@@ -1,23 +1,16 @@
 "use client";
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-} from "react";
-import { useQuery } from "@tanstack/react-query";
+import { createContext, useContext, useEffect } from "react";
+import { useQuery, QueryClient, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../utils/queryKeys";
 import api from "../lib/api";
 import { User } from "../types";
-import getToken from "../lib/getMeAndUsers";
+
 import { usePathname, useRouter } from "next/navigation";
+import { useUserStore } from "../store/userStore";
 
 type AuthContextValue = {
   user: User | null;
   isLoading: boolean;
-  token: string | null;
-  isTokenValidated: boolean;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -25,56 +18,79 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [token, setToken] = useState<string | null>(getToken());
-  const [isTokenValidated, setIsTokenValidated] = useState(false);
-  // const queryClient = useQueryClient();
+  const queryClient = useQueryClient();
 
-  const syncToken = useCallback(() => {
-    const newToken = getToken();
-    setToken(newToken);
-  }, []);
-
-  useEffect(() => {
-    // Listen for StorageEvent (e.g., from another tab)
-    window.addEventListener("storage", syncToken);
-    // Listen for our own custom event (dispatched after signup/login)
-    window.addEventListener("token-changed", syncToken);
-    return () => {
-      window.removeEventListener("storage", syncToken);
-      window.removeEventListener("token-changed", syncToken);
-    };
-  }, [syncToken]);
-
-  useEffect(() => {
-    const publicPaths = ["/login", "/signup", "/auth/callback"];
-    if (!token && !publicPaths.some((p) => pathname.startsWith(p))) {
-      router.replace("/login");
-    }
-  }, [token, pathname, router]);
-
-  const { data, isLoading } = useQuery<User | null>({
-    queryKey: queryKeys.user.current(token ?? ""),
+  const setUser = useUserStore((s) => s.setUser);
+  const setLoading = useUserStore((s) => s.setLoading);
+  const {
+    data: user,
+    isLoading,
+    error,
+  } = useQuery<User | null>({
+    queryKey: queryKeys.user.current(),
     queryFn: async () => {
-      if (!token) return null;
-      const headers = { Authorization: `Bearer ${token}` };
-      const res = await api.get<User>("/users/me", { headers });
-      setIsTokenValidated(true);
-      return res.data;
+      try {
+        const res = await api.get<User>("/users/me");
+        return res.data;
+      } catch {
+        return null;
+      }
     },
-    enabled: !!token,
     staleTime: 1000 * 60 * 10,
-    retry: 1,
+    retry: false,
   });
 
+  // mirror into Zustand
+  useEffect(() => {
+    if (user !== undefined) {
+      setUser(user);
+      setLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (error) {
+      setUser(null);
+      setLoading(false);
+    }
+  }, [error]);
+
+  useEffect(() => {
+    const handleAuthChange = () =>
+      queryClient.invalidateQueries({ queryKey: queryKeys.user.current() });
+    window.addEventListener("token-changed", handleAuthChange);
+    return () => window.removeEventListener("token-changed", handleAuthChange);
+  }, [queryClient]);
+
+  useEffect(() => {
+    const exactPublicPaths = [
+      "/login",
+      "/signup",
+      "/auth/callback",
+      "/about",
+      "/feed",
+    ];
+    const isExactPublic = exactPublicPaths.includes(pathname);
+    const segments = pathname.split("/").filter(Boolean);
+    const isPublicProfile = segments.length === 2 && segments[0] === "users";
+    const isPublicPost =
+      (segments.length === 3 || segments.length === 2) &&
+      segments[0] === "post";
+
+    const isPublicPath =
+      isExactPublic ||
+      isPublicProfile ||
+      isPublicPost ||
+      pathname.split("/")[1] === "about-us" ||
+      pathname.split("/")[1] === "feed";
+
+    if (!isLoading && !user && !isPublicPath) {
+      router.replace("/login");
+    }
+  }, [user, isLoading, pathname, router]);
+
   return (
-    <AuthContext.Provider
-      value={{
-        user: data ?? null,
-        isLoading,
-        token,
-        isTokenValidated,
-      }}
-    >
+    <AuthContext.Provider value={{ user: user ?? null, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

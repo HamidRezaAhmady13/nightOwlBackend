@@ -1,15 +1,14 @@
 "use client";
 import NotificationItem from "@/features/components/notification/NotificationItem";
 import Button from "@/features/components/shared/Button";
-import Spinner from "@/features/components/shared/Spinner";
 import { Notification as AppNotification } from "@/features/types/notification.types";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNotifications } from "@/features/hooks/useNotifications";
 import { useMarkManyRead } from "@/features/hooks/useMarkManyRead";
-import { useCurrentUser } from "@/features/components/AuthContext";
+import { useUserStore } from "@/features/store/userStore";
 
 export default function NotificationsPage() {
-  const { user: currentUser } = useCurrentUser();
+  const currentUser = useUserStore((s) => s.user);
   const hasMarkedRead = useRef(false);
 
   const {
@@ -58,8 +57,9 @@ export default function NotificationsPage() {
     }
   }, [notifications]);
 
-  if (isLoading) return <Spinner />;
-  if (notifications.length === 0) return <div>No notifications</div>;
+  if (isLoading) return null;
+  if (notifications.length === 0)
+    return <div className="mt-3xl">No notifications</div>;
 
   return (
     <>

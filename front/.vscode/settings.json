@@ -7,9 +7,27 @@
   "tailwindCSS.emmetCompletions": true,
   "tailwindCSS.experimental.configFile": "tailwind.config.js",
   "workbench.colorCustomizations": {
-    "titleBar.activeBackground": "#bfdfff",
-    "titleBar.inactiveBackground": "#9fbfdf",
+    "titleBar.activeBackground": "#afc6d8",
+    "titleBar.inactiveBackground": "#a8cde9",
     "titleBar.activeForeground": "#000000",
     "titleBar.inactiveForeground": "#000000"
-  }
+    // "sideBar.foreground": "#ffffff",
+    // "sideBar.background": "#000c10"
+    // "sideBar.foreground": "#fdffff",
+    // "sideBar.background": "#00041a",
+
+    // "editor.background": "#00041a",
+    // "menubar.selectionForeground": "#08655e",
+    // "menu.selectionBackground": "#ffffff",
+    // "breadcrumb.background": "#cfdef1",
+    // "breadcrumb.foreground": "#000000"
+    // "breadcrumbPicker.background": "#6b1c1c"
+    // "tab.hoverBackground"
+    // "editor.selectionBackground": "#00FF00",
+    // "editor.foreground": "#880000"
+    // "editorInfo.background": "#f7fff7d5",
+    // "editor.foldBackground": "#96af87f9"
+  },
+
+  "window.title": "🎨🎨 [FRONTEND] — ${rootName} (${activeEditorShort}) 🎨🎨"
 }

@@ -5,12 +5,12 @@ import {
 } from "@tanstack/react-query";
 import api from "../lib/api";
 import { queryKeys } from "../utils/queryKeys";
-import { useCurrentUser } from "../components/AuthContext";
 import { NotificationFeedPage } from "../types/notification.types";
+import { useUserStore } from "../store/userStore";
 
 export function useMarkManyRead() {
   const queryClient = useQueryClient();
-  const { user: currentUser } = useCurrentUser();
+  const currentUser = useUserStore((s) => s.user);
 
   return useMutation({
     mutationFn: async (ids: string[]) => {
@@ -33,11 +33,11 @@ export function useMarkManyRead() {
               items: page.items.map((item) =>
                 ids.includes(item.id)
                   ? { ...item, readAt: new Date().toISOString() }
-                  : item
+                  : item,
               ),
             })),
           };
-        }
+        },
       );
     },
   });

@@ -1,22 +1,11 @@
-// NotificationItem.tsx
 import { Notification } from "@/features/types/notification.types";
 import Link from "next/link";
 import AvatarImage from "../shared/AvatarImage";
-import React, { useEffect, useMemo, useState } from "react";
-import { useNotifications } from "@/features/hooks/useNotifications";
+import React, { useEffect, useState } from "react";
 import { getUserbyId } from "@/features/lib/getMeAndUsers";
-import { queryKeys } from "@/features/utils/queryKeys";
-import { useQuery } from "@tanstack/react-query";
-import api from "@/features/lib/api";
-import { User } from "@/features/types";
 
-const getAvatarUrl = (path?: string) => {
-  if (!path) return undefined;
-  // If path is already a full URL, return as-is
-  if (path.startsWith("http")) return path;
-  // If it's a relative path, prepend your API URL
-  return `http://localhost:3000${path}`;
-};
+import api, { BACKEND_BASE } from "@/features/lib/api";
+import { User } from "@/features/types";
 
 const NotificationItem = React.memo(function NotificationItem({
   ntf,
@@ -41,8 +30,8 @@ const NotificationItem = React.memo(function NotificationItem({
         ntf.payloadRef?.commentId
           ? `/post/${ntf.payloadRef.postId}?commentId=${ntf.payloadRef.commentId}`
           : ntf.payloadRef?.postId
-          ? `/post/${ntf.payloadRef.postId}`
-          : `/users/${displayUser?.username}`
+            ? `/post/${ntf.payloadRef.postId}`
+            : `/users/${displayUser?.username}`
       }
     >
       {" "}
@@ -51,7 +40,13 @@ const NotificationItem = React.memo(function NotificationItem({
         <div className="text-sm font-medium u-flex-start gap-sm">
           {" "}
           <AvatarImage
-            src={getAvatarUrl(displayUser?.avatarUrl)}
+            src={
+              displayUser?.avatarUrl
+                ? displayUser?.avatarUrl.startsWith("http")
+                  ? displayUser?.avatarUrl
+                  : `${BACKEND_BASE}${displayUser?.avatarUrl}`
+                : `${BACKEND_BASE}/uploads/default-avatar.png`
+            }
             alt={displayUser?.username}
             size={24}
           />{" "}
@@ -59,8 +54,8 @@ const NotificationItem = React.memo(function NotificationItem({
           {ntf.type === "like"
             ? "liked your post"
             : ntf.type === "comment"
-            ? "commented on your post"
-            : "followed you"}{" "}
+              ? "commented on your post"
+              : "followed you"}{" "}
         </div>{" "}
         <div className="text-xs u-text-secondary">
           {" "}

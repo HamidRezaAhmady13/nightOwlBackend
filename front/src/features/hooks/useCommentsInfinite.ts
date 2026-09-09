@@ -17,7 +17,7 @@ export function useCommentsInfinite({
     queryKey: queryKeys.comments.list(postId),
     queryFn: async ({ pageParam = 1 }) => {
       const res = await api.get<CommentWithLikeState[]>(
-        `/comments/post/${postId}?page=${pageParam}&limit=${limit}`
+        `/comments/post/${postId}?page=${pageParam}&limit=${limit}`,
       );
 
       return { data: res.data, page: pageParam };
@@ -42,7 +42,7 @@ export function useRepliesInfinite({
     queryKey: queryKeys.replies.list(commentId),
     queryFn: async ({ pageParam }) => {
       const res = await api.get<CommentWithLikeState[]>(
-        `/comments/${commentId}/replies?page=${pageParam}&limit=${limit}`
+        `/comments/${commentId}/replies?page=${pageParam}&limit=${limit}`,
       );
       return { data: res.data, page: pageParam };
     },

@@ -1,9 +1,6 @@
+import { MouseEvent } from "react";
 import type { Media } from "./media.types";
 import type { User, UserPreview } from "./user.types";
-
-export type PostFilesProps = {
-  files?: { id: string; url: string }[];
-};
 
 export type Post = {
   id: string;
@@ -18,12 +15,19 @@ export type Post = {
   files: { id: string; url: string }[];
 };
 
+export type PostFilesProps = {
+  files?: { id: string; url: string }[];
+};
+
 export type PostMode = "feed" | "modal";
 
 export type PostActionsProps = {
   post: Post;
-  currentUserId: string;
-  onCommentClick: () => void;
+  // currentUserId: string;
+  // onCommentClick: () => void;
+  currentUser: UserPreview | null;
+
+  onCommentClick?: (e: MouseEvent<HTMLButtonElement>) => void;
 };
 
 export type SinglePostProps = {
@@ -38,6 +42,7 @@ export type PostPreview = Pick<
   "id" | "createdAt" | "likesCount" | "commentsCount"
 > & {
   imageUrl?: string | null;
+  content?: string | null;
 };
 
 export const SQUARE_RATIO = "aspect-[1/1]"; // replace with your real classes
@@ -62,4 +67,18 @@ export type FeedPageGeneric<T> = {
 export type PostsInfiniteData = {
   pages: { items: Post[] }[];
   pageParams: unknown[];
+};
+
+export type PostCardProps = {
+  post: Post;
+  onNavigate?: () => void;
+  onCommentClick?: () => void;
+  mode?: PostMode;
+};
+
+export type PostShellProps = {
+  post: Post;
+
+  children?: React.ReactNode;
+  onClickComment: () => void;
 };

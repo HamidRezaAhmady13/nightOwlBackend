@@ -5,9 +5,9 @@ import FormInput from "@/features/components/forms/FormInput";
 import Spinner from "@/features/components/shared/Spinner";
 import FileUploadInput from "@/features/components/forms/FileUploadInput";
 import { useEditProfile } from "@/features/hooks/useEditProfile";
-import { useCurrentUser } from "@/features/components/AuthContext";
 import { useState } from "react";
 import ConfirmModal from "@/features/components/shared/ConfirmModal";
+import { useUserStore } from "@/features/store/userStore";
 
 export default function EditProfilePage() {
   const [showRemoveModal, setShowRemoveModal] = useState(false);
@@ -21,8 +21,8 @@ export default function EditProfilePage() {
     setRemoveAvatar,
     removeAvatarMutation,
   } = useEditProfile();
-  const { user: currentUser } = useCurrentUser();
-  if (isLoading) return <Spinner />;
+  const currentUser = useUserStore((s) => s.user);
+  if (isLoading) return null;
 
   return (
     <div className="max-w-2xl mt-3xl mx-auto o-edit-profile shadow-lg  ">

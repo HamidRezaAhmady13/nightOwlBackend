@@ -18,8 +18,6 @@ import { showSimpleToast } from "./ntfToast";
 import { toNotification } from "@/features/utils/dateUtils";
 import { queryKeys } from "../utils/queryKeys";
 import { fetchUserById } from "../lib/api";
-import { useCurrentUser } from "./AuthContext";
-import getToken from "../lib/getMeAndUsers";
 
 type SocketContextValue = { socket: Socket | null; connected: boolean };
 const SocketContext = createContext<SocketContextValue>({
@@ -30,7 +28,7 @@ export const useSocket = () => useContext(SocketContext);
 
 export default function SocketProvider({
   children,
-  url = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3001",
+  url = process.env.NEXT_PUBLIC_SOCKET_URL || "https://127.0.0.1:3001",
   userId,
 }: {
   children: React.ReactNode;
@@ -42,16 +40,9 @@ export default function SocketProvider({
   const router = useRouter();
   const [connected, setConnected] = useState(false);
   const queryClient = useQueryClient();
-  const { token, user } = useCurrentUser();
-  const [shouldConnect, setShouldConnect] = useState(false);
 
-  useEffect(() => {
-    if (token && user?.id) {
-      setShouldConnect(true);
-    } else {
-      setShouldConnect(false);
-    }
-  }, [token, user]);
+  // Connect socket if we have a logged-in user
+  const shouldConnect = Boolean(userId);
 
   useEffect(() => {
     if (!shouldConnect) {
@@ -63,49 +54,25 @@ export default function SocketProvider({
       return;
     }
 
-    if (socketRef.current) {
-      return;
-    }
+    if (socketRef.current) return;
 
-    const freshToken = getToken();
-
+    // HttpOnly cookie will automatically be sent because withCredentials: true
     const s = io(url, {
-      auth: { token: getToken() },
       withCredentials: true,
       autoConnect: true,
     });
 
     socketRef.current = s;
 
-    const handleConnect = () => {
-      setConnected(true);
-      if (token) s.emit("auth", { token });
-    };
-
-    const handleDisconnect = () => {
-      setConnected(false);
-    };
-
-    const handleConnectError = (err: any) => {
-      setConnected(false);
-    };
+    const handleConnect = () => setConnected(true);
+    const handleDisconnect = () => setConnected(false);
+    const handleConnectError = () => setConnected(false);
 
     s.on("connect", handleConnect);
     s.on("disconnect", handleDisconnect);
     s.on("connect_error", handleConnectError);
 
-    // 👇 Listen for token refresh
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "token" && e.newValue && socketRef.current === s) {
-        s.disconnect(); // Will trigger auto-reconnect
-      }
-    };
-
-    window.addEventListener("storage", handleStorageChange);
-
-    // 👇 Cleanup
     return () => {
-      window.removeEventListener("storage", handleStorageChange);
       s.off("connect", handleConnect);
       s.off("disconnect", handleDisconnect);
       s.off("connect_error", handleConnectError);
@@ -113,16 +80,16 @@ export default function SocketProvider({
       socketRef.current = null;
       setConnected(false);
     };
-  }, [shouldConnect, url, token]);
+  }, [shouldConnect, url]);
+
+  // Handle Notifications
   useEffect(() => {
     const s = socketRef.current;
-    if (!s || !shouldConnect) return;
+    if (!s || !shouldConnect || !userId) return;
 
     const onNotification = (raw: BackendNotificationEntity) => {
       const ntf = toNotification(raw);
-      if (seen?.current?.has(String(raw.id))) {
-        return;
-      }
+      if (seen.current.has(String(raw.id))) return;
 
       const infiniteKey = queryKeys.notifications.infinite(userId);
       const unreadKey = queryKeys.notifications.unread(userId);
@@ -155,42 +122,16 @@ export default function SocketProvider({
         },
       );
 
-      queryClient.setQueryData<number | undefined>(unreadKey, (prev) => {
-        return (prev ?? 0) + 1;
-      });
+      queryClient.setQueryData<number | undefined>(
+        unreadKey,
+        (prev) => (prev ?? 0) + 1,
+      );
 
       if (!seen.current.has(ntf.id)) {
         seen.current.add(ntf.id);
         showSimpleToast(ntf, router);
       }
-
-      if (raw.sourceId && !ntf.sourceUser) {
-        fetchUserById(raw.sourceId)
-          .then((user) => {
-            queryClient.setQueryData<
-              InfiniteData<NotificationFeedPage> | undefined
-            >(infiniteKey, (prev) => {
-              if (!prev) return prev;
-              return {
-                ...prev,
-                pages: prev.pages.map((page) => ({
-                  ...page,
-                  items: page.items.map((item) =>
-                    item.id === ntf.id ? { ...item, sourceUser: user } : item,
-                  ),
-                })),
-              };
-            });
-          })
-          .catch(() => {});
-      }
     };
-
-    setTimeout(() => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.notifications.unread(userId),
-      });
-    }, 500);
 
     const onUnreadCount = (payload: { unread: number }) => {
       const key = queryKeys.notifications.unread(userId);

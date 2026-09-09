@@ -1,25 +1,15 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import clsx from "clsx";
 
 import Button from "@/features/components/shared/Button";
 import FormInput from "@/features/components/forms/FormInput";
 import { GeneralLink } from "@/features/components/shared/GeneralLink";
 import { useLoginForm } from "@/features/hooks/useLoginForm";
-import { redirectToGoogleAuth } from "@/features/lib/auth";
 
 export default function LoginPage() {
-  const router = useRouter();
-  const {
-    email,
-    password,
-    error,
-    loading,
-    setEmail,
-    setPassword,
-    handleLogin,
-  } = useLoginForm();
+  const { email, password, loading, setEmail, setPassword, handleLogin } =
+    useLoginForm();
 
   return (
     <div className="o-login   max-w-xl mx-auto mt-2xl min-w-[35rem]">
@@ -47,10 +37,6 @@ export default function LoginPage() {
             required
             wrapperClassName="min-w-full"
           />
-
-          <div className="u-flex-center  min-h-lg">
-            {error && <p className="error">{error}</p>}
-          </div>
         </div>
 
         <Button

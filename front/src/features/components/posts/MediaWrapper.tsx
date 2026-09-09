@@ -15,7 +15,7 @@ export default function MediaWrapper({
   if (mode === "feed") {
     return (
       <div
-        className={`relative w-full ${aspectClass} overflow-hidden rounded-2xl`}
+        className={`relative w-full ${aspectClass} overflow-hidden rounded-md`}
       >
         {children}
       </div>

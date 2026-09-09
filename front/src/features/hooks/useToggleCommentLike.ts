@@ -7,6 +7,26 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../lib/api";
 import { queryKeys } from "../utils/queryKeys";
 
+function updateCommentLikeState(
+  comment: CommentWithLikeState,
+  commentId: string,
+  liked: boolean,
+): CommentWithLikeState {
+  if (comment.id === commentId) {
+    return {
+      ...comment,
+      likeCount: liked ? comment.likeCount - 1 : comment.likeCount + 1,
+      likedByCurrentUser: !liked,
+    };
+  }
+
+  const childComments = comment.childComments?.map((child) =>
+    updateCommentLikeState(child, commentId, liked),
+  );
+
+  return childComments ? { ...comment, childComments } : comment;
+}
+
 export function useToggleCommentLike(postId: string) {
   const queryClient = useQueryClient();
 
@@ -30,11 +50,11 @@ export function useToggleCommentLike(postId: string) {
       ]);
 
       const prevComments = queryClient.getQueryData<CommentWithLikeState[]>(
-        queryKeys.comments.list(postId)
+        queryKeys.comments.list(postId),
       );
       const prevReplies = parentCommentId
         ? queryClient.getQueryData<CommentWithLikeState[]>(
-            queryKeys.replies.list(parentCommentId)
+            queryKeys.replies.list(parentCommentId),
           )
         : undefined;
 
@@ -45,11 +65,11 @@ export function useToggleCommentLike(postId: string) {
           const pages = old.pages.map((p) => ({
             ...p,
             data: p.data.map((c) =>
-              updateCommentLikeState(c, commentId, liked)
+              updateCommentLikeState(c, commentId, liked),
             ),
           }));
           return { ...old, pages };
-        }
+        },
       );
 
       // Update the replies list if applicable
@@ -61,11 +81,11 @@ export function useToggleCommentLike(postId: string) {
             const pages = old.pages.map((p) => ({
               ...p,
               data: p.data.map((r) =>
-                updateCommentLikeState(r, commentId, liked)
+                updateCommentLikeState(r, commentId, liked),
               ),
             }));
             return { ...old, pages };
-          }
+          },
         );
       }
 
@@ -76,13 +96,13 @@ export function useToggleCommentLike(postId: string) {
       if (ctx?.prevComments) {
         queryClient.setQueryData(
           queryKeys.comments.list(postId),
-          ctx.prevComments
+          ctx.prevComments,
         );
       }
       if (ctx?.parentCommentId && ctx?.prevReplies) {
         queryClient.setQueryData(
           queryKeys.replies.list(ctx.parentCommentId),
-          ctx.prevReplies
+          ctx.prevReplies,
         );
       }
     },
@@ -99,24 +119,4 @@ export function useToggleCommentLike(postId: string) {
       }
     },
   });
-}
-
-function updateCommentLikeState(
-  comment: CommentWithLikeState,
-  commentId: string,
-  liked: boolean
-): CommentWithLikeState {
-  if (comment.id === commentId) {
-    return {
-      ...comment,
-      likeCount: liked ? comment.likeCount - 1 : comment.likeCount + 1,
-      likedByCurrentUser: !liked,
-    };
-  }
-
-  const childComments = comment.childComments?.map((child) =>
-    updateCommentLikeState(child, commentId, liked)
-  );
-
-  return childComments ? { ...comment, childComments } : comment;
 }

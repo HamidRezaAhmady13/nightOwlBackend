@@ -24,7 +24,7 @@ export const findSeekEl = (seekBarSelector?: string): HTMLElement | null => {
 
 export const mountCanvasInto = (
   canvas: HTMLCanvasElement,
-  root?: HTMLElement
+  root?: HTMLElement,
 ): void => {
   const target = root ?? getMountRoot();
   if (canvas.parentElement === target) {
@@ -56,7 +56,7 @@ export const computeCanvasPosition = (
     seekEl?: HTMLElement | null;
     canvasHeightPx?: number;
     gapPx?: number;
-  }
+  },
 ) => {
   const root = opts?.root ?? getMountRoot();
   const gap = typeof opts?.gapPx === "number" ? opts!.gapPx : 8;
@@ -91,7 +91,7 @@ export const isOverElement = (
   x: number,
   y: number,
   el?: HTMLElement | null,
-  ownerDoc?: Document
+  ownerDoc?: Document,
 ): boolean => {
   if (!el) return false;
   const doc = ownerDoc ?? document;
@@ -102,7 +102,7 @@ export const isOverElement = (
 
 export const safeMeasureRect = (
   seekEl: HTMLElement | null,
-  videoRef: RefObject<HTMLVideoElement | null>
+  videoRef: RefObject<HTMLVideoElement | null>,
 ) => {
   if (!seekEl) return videoRef.current!.getBoundingClientRect();
   // prefer ownerDocument's getBoundingClientRect (same element)
@@ -140,14 +140,14 @@ export const createPointerOutHandler = (deps: {
       deps.seekListeners,
       deps.HIDE_HOLD_MS,
       deps.seekBarSelector,
-      ev
+      ev,
     );
   };
 };
 
 export const attachMoveHandlerToDoc = (
   ownerDoc: Document,
-  handler: (ev: MouseEvent) => void
+  handler: (ev: MouseEvent) => void,
 ) => {
   ownerDoc.addEventListener("mousemove", handler as EventListener);
   return () =>
@@ -159,7 +159,7 @@ export const pointerOutHandler = (
   seekListeners: SeekListeners,
   HIDE_HOLD_MS: number,
   seekBarSelector?: string,
-  e?: PointerEvent
+  e?: PointerEvent,
 ) => {
   const canvasLocal = canvasMgr.getCanvas();
   const seekElLocal =
@@ -178,7 +178,7 @@ export const pointerOutHandler = (
         e?.clientX ?? 0,
         e?.clientY ?? 0,
         seekElLocal,
-        seekElLocal?.ownerDocument
+        seekElLocal?.ownerDocument,
       )
     : false;
   const overCanvas = canvasLocal
@@ -186,7 +186,7 @@ export const pointerOutHandler = (
         e?.clientX ?? 0,
         e?.clientY ?? 0,
         canvasLocal,
-        canvasLocal.ownerDocument
+        canvasLocal.ownerDocument,
       )
     : false;
   if (overSeek || overCanvas) return;
@@ -197,7 +197,7 @@ export function setSize(
   canvas: HTMLCanvasElement | null,
   w: number,
   h: number,
-  dprRef: DprRef
+  dprRef: DprRef,
 ): void {
   if (!canvas) return;
   const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
@@ -212,7 +212,7 @@ export function setSize(
 
 export function show(
   canvas: HTMLCanvasElement | null,
-  hideTimerRef: HideTimerRef
+  hideTimerRef: HideTimerRef,
 ): void {
   if (!canvas) return;
   if (hideTimerRef.current) {
@@ -227,7 +227,7 @@ export function show(
 export function hide(
   canvas: HTMLCanvasElement | null,
   hideTimerRef: HideTimerRef,
-  immediate = false
+  immediate = false,
 ): void {
   if (!canvas) return;
   if (hideTimerRef.current) {
@@ -245,7 +245,7 @@ export function hide(
 
 export function mountIntoRoot(
   canvas: HTMLCanvasElement | null,
-  root?: HTMLElement | null
+  root?: HTMLElement | null,
 ): void {
   if (!canvas) return;
   const target = root ?? getMountRoot();
@@ -272,7 +272,7 @@ export function mountIntoRoot(
 export function scheduleHide(
   canvas: HTMLCanvasElement | null,
   hideTimerRef: HideTimerRef,
-  holdMs = 700
+  holdMs = 700,
 ): void {
   if (!canvas) return;
   if (hideTimerRef.current) window.clearTimeout(hideTimerRef.current);
@@ -298,7 +298,7 @@ export const onMove = (
     height: number;
     imageCache: Record<number, HTMLImageElement>;
     thumbUrlFn: (sec: number) => string;
-  }
+  },
 ): void => {
   const {
     mountedRef,
@@ -367,7 +367,7 @@ export const onMove = (
       0,
       0,
       canvasLocal.width,
-      canvasLocal.height
+      canvasLocal.height,
     );
     return;
   }
@@ -383,7 +383,7 @@ export const onMove = (
 
 export function refreshMountedRoot(
   internalRef: React.RefObject<HTMLCanvasElement | null>,
-  mountedRootRef: React.RefObject<HTMLElement | null>
+  mountedRootRef: React.RefObject<HTMLElement | null>,
 ): void {
   const node = internalRef.current;
   if (!node) return;
@@ -406,7 +406,7 @@ export function refreshMountedRoot(
 export const bind = (
   seekBarSelector?: string,
   boundSeekRef?: React.RefObject<HTMLElement | null>,
-  cachedRectRef?: React.RefObject<DOMRect | null>
+  cachedRectRef?: React.RefObject<DOMRect | null>,
 ) => {
   if (!seekBarSelector || !boundSeekRef) return;
   const seekEl = findSeekEl(seekBarSelector);
@@ -418,7 +418,7 @@ export const bind = (
 
 export const unbind = (
   boundSeekRef?: React.RefObject<HTMLElement | null>,
-  cachedRectRef?: React.RefObject<DOMRect | null>
+  cachedRectRef?: React.RefObject<DOMRect | null>,
 ) => {
   if (boundSeekRef) boundSeekRef.current = null;
   if (cachedRectRef) cachedRectRef.current = null;
@@ -426,10 +426,8 @@ export const unbind = (
 
 export const measure = (
   seekEl: HTMLElement | null,
-  cachedRectRef?: React.RefObject<DOMRect | null>
+  cachedRectRef?: React.RefObject<DOMRect | null>,
 ): DOMRect | null => {
-  // console.log(seekEl);
-
   if (!seekEl) {
     if (cachedRectRef) cachedRectRef.current = null;
     return null;
@@ -464,7 +462,7 @@ export function makePointerHandler(args: {
         updateCanvasPosition(
           args.canvasRef.current,
           seek,
-          (e as PointerEvent).clientX
+          (e as PointerEvent).clientX,
         );
       }
 
@@ -485,7 +483,7 @@ export function makePointerHandler(args: {
 export function updateCanvasPosition(
   canvas: HTMLCanvasElement | null,
   seek: SeekListeners,
-  clientX: number
+  clientX: number,
 ) {
   if (!canvas) return;
   const rect = seek.lastRect();
@@ -502,7 +500,7 @@ export function getSnappedTime(
   e: MouseEvent,
   bar: HTMLElement,
   duration: number,
-  intervalSec: number
+  intervalSec: number,
 ) {
   const rect = bar.getBoundingClientRect();
   const percent = (e.clientX - rect.left) / rect.width;
@@ -519,7 +517,7 @@ export function positionCanvas(
   e: MouseEvent,
   width: number,
   height: number,
-  barTop: number
+  barTop: number,
 ) {
   canvas.style.left = `${clampPosition(e.clientX, width, window.innerWidth)}px`;
   canvas.style.top = `${Math.max(0, barTop - height - 8)}px`;

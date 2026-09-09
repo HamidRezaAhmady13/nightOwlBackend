@@ -1,18 +1,14 @@
 "use client";
 
-import { Post, PostMode } from "@/features/types";
+import { PostCardProps } from "@/features/types";
 import { PostHeader } from "./PostHeader";
 import { PostContent } from "./PostContent";
 import PostMedia from "./PostMedia";
 import PostActions from "./PostActions";
-import { useCurrentUser } from "../AuthContext";
-
-type PostCardProps = {
-  post: Post;
-  onNavigate?: () => void;
-  onCommentClick?: () => void;
-  mode?: PostMode;
-};
+import { useUserStore } from "@/features/store/userStore";
+import { GeneralLink } from "../shared/GeneralLink";
+import { createSlug } from "@/features/lib/seo";
+import { getPostFiles } from "@/features/utils/extractPostMedia";
 
 export default function PostShell({
   post,
@@ -20,8 +16,8 @@ export default function PostShell({
   onCommentClick,
   mode = "feed",
 }: PostCardProps) {
-  const { user: currentUser } = useCurrentUser();
-  if (!currentUser) return null;
+  const currentUser = useUserStore((s) => s.user);
+  const files = getPostFiles(post);
 
   const isInteractive = typeof onNavigate === "function";
   const handleNavigate = onNavigate ?? (() => {});
@@ -29,7 +25,7 @@ export default function PostShell({
 
   return (
     <div
-      className={`relative rounded bg-transparent  min-w-[50rem]`}
+      className={`relative rounded bg-transparent  min-w-[50rem] `}
       style={{
         display: "flex",
         flexDirection: "column",
@@ -47,6 +43,7 @@ export default function PostShell({
           style={{
             flex: "1 1 auto",
             overflow: "auto",
+            maxHeight: "80vh",
             minHeight: 0,
             padding: "12px 0",
           }}
@@ -69,9 +66,19 @@ export default function PostShell({
               padding: "12px 0",
             }}
           >
-            <PostMedia post={post} mode={mode} />
+            {files.length === 0 && (
+              <>
+                <PostMedia post={post} mode={mode} />
 
-            <PostContent post={post} />
+                <PostContent post={post} />
+              </>
+            )}
+            {files.length > 0 && (
+              <>
+                <PostMedia post={post} mode={mode} />
+                <PostContent post={post} />
+              </>
+            )}
           </div>
         </>
       )}
@@ -81,7 +88,7 @@ export default function PostShell({
           post={post}
           currentUser={currentUser}
           onCommentClick={(e) => {
-            e.stopPropagation();
+            e?.stopPropagation();
             handleComment();
           }}
         />

@@ -27,10 +27,8 @@ export default function CommentsModal({
     if (!commentId) return;
     if (!comments?.length) return;
 
-    // ensure types match
     const normalizedId = String(commentId);
 
-    // wait for paint to complete
     const raf = requestAnimationFrame(() => {
       const el = document.getElementById(`comment-${normalizedId}`);
       if (el) {
@@ -41,9 +39,6 @@ export default function CommentsModal({
 
     return () => cancelAnimationFrame(raf);
   }, [commentId, comments?.length]);
-
-  const scrollToTop = () =>
-    listRef.current?.scrollTo({ top: 0, behavior: "smooth" });
 
   const [replyTo, setReplyTo] = useState<{
     immediateId: string;
@@ -66,7 +61,6 @@ export default function CommentsModal({
 
   useModalStack(() => onClose());
 
-  // if (typeof window === "undefined") return null;
   if (typeof window !== "undefined") {
     window.addEventListener("load", () => {});
   }
@@ -79,17 +73,15 @@ export default function CommentsModal({
 
   return ReactDOM.createPortal(
     <div
-      className="fixed inset-0 z-[9999999999] u-flex-center   " // ensure higher z than parent modal
+      className="fixed inset-0 z-[9999999999] u-flex-center   "
       aria-modal="true"
       role="presentation"
     >
-      {/* Backdrop: captures pointerdown and closes the top modal */}
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
         onPointerDown={() => onClose()}
       />
 
-      {/* Dialog: stops pointer events so they do not bubble to backdrop or lower modals */}
       <div
         ref={dialogRef}
         role="dialog"
@@ -108,23 +100,29 @@ export default function CommentsModal({
           {isLoading ? (
             <p>Loading...</p>
           ) : comments?.length ? (
-            <ul className="space-y-md">
-              {comments.map((c) => (
-                <li key={c.id} id={`comment-${String(c.id)}`}>
-                  <CommentItem
-                    {...c}
-                    postId={postId}
-                    isExpanded={Boolean(expanded[c.id])}
-                    onToggleReplies={() => toggleExpanded(c.id)}
-                    // pass control data so nested CommentItem can forward expansion/props
-                    expandedMap={expanded}
-                    toggleExpanded={toggleExpanded}
-                    // new: pass reply state handlers into children
-                    replyTo={replyTo}
-                    setReplyTo={setReplyTo}
-                  />
-                </li>
-              ))}
+            <ul className="space-y-md ">
+              {comments.map((c) => {
+                return (
+                  <li
+                    key={c.id}
+                    className="w-full  "
+                    id={`comment-${String(c.id)}`}
+                  >
+                    <div className="w-full ">
+                      <CommentItem
+                        {...c}
+                        postId={postId}
+                        isExpanded={Boolean(expanded[c.id])}
+                        onToggleReplies={() => toggleExpanded(c.id)}
+                        expandedMap={expanded}
+                        toggleExpanded={toggleExpanded}
+                        replyTo={replyTo}
+                        setReplyTo={setReplyTo}
+                      />
+                    </div>
+                  </li>
+                );
+              })}
               {hasNextPage && (
                 <div className="block w-full u-flex-center">
                   <Button
@@ -147,7 +145,7 @@ export default function CommentsModal({
             postId={postId}
             autoFocus={true}
             onSuccess={() => {}}
-            className="w-full"
+            className="w-full "
           />
         </div>
       </div>

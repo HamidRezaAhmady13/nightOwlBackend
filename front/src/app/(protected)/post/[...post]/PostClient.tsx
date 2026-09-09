@@ -1,23 +1,23 @@
+// app/post/[...post]/PostClient.tsx
 "use client";
 
-import Spinner from "@/features/components/shared/Spinner";
-import PostShell from "@/features/components/posts/PostShell";
 import CommentsModal from "@/features/components/comment/CommentsModal";
+import PostShell from "@/features/components/posts/PostShell";
+import { usePostQuery } from "@/features/hooks/usePosts";
+import { useUserStore } from "@/features/store/userStore";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { usePostQuery } from "@/features/hooks/usePosts";
-import { useCurrentUser } from "@/features/components/AuthContext";
 
-export default function PostPage() {
+export default function PostClient({ postId }: { postId: string }) {
   const searchParams = useSearchParams();
   const commentId = searchParams.get("commentId");
 
-  const { data: post, isLoading } = usePostQuery();
-  const { user: currentUser } = useCurrentUser();
+  const { data: post, isLoading } = usePostQuery({ id: postId });
+
+  // const currentUser = useUserStore((s) => s.user);
   const [isOpenModal, setIsOpenModal] = useState<Boolean>(Boolean(commentId));
 
-  if (isLoading) return <Spinner />;
-  if (!currentUser) return;
+  if (isLoading) return null;
   if (!post) return <p>no data found</p>;
 
   return (

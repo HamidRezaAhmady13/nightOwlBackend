@@ -1,6 +1,6 @@
 @layer components {
   .o-app-root {
-    @apply u-bg-main u-text-primary transition-colors duration-fast;
+    @apply u-bg-main u-text-primary transition-colors duration-fast mt-16;
   }
   .o-app-shell {
     @apply flex flex-col px-md w-full;

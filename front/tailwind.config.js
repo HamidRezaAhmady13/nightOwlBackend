@@ -1,9 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   darkMode: "class",
-  images: {
-    domains: ["api.example.com", "cdn.example.com"],
-  },
+
   content: [
     "./src/**/*.{js,ts,jsx,tsx}",
     "./src/styles/**/*.css", // fixed glob
@@ -12,6 +10,11 @@ module.exports = {
   theme: {
     extend: {
       fontSize: {
+        keyframes: {
+          shimmer: {
+            "100%": { transform: "translateX(100%)" },
+          },
+        },
         xxs: ["0.8rem", { lineHeight: "1.2rem" }], // 12px
         xs: ["1.2rem", { lineHeight: "1.4rem" }], // 12px
         sm: ["1.4rem", { lineHeight: "1.6rem" }], // 14px

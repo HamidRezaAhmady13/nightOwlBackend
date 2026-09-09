@@ -2,7 +2,7 @@ import { Post } from "@/features/types";
 import AvatarImage from "../shared/AvatarImage";
 import { useRouter } from "next/navigation";
 import { GeneralLink } from "../shared/GeneralLink";
-import { API_URL } from "@/features/lib/api";
+import { BACKEND_BASE } from "@/features/lib/api";
 
 export function PostHeader({ post }: { post: Post }) {
   const router = useRouter();
@@ -18,7 +18,7 @@ export function PostHeader({ post }: { post: Post }) {
               src={
                 post.owner.avatarUrl?.startsWith("http")
                   ? post.owner.avatarUrl
-                  : `${API_URL}${
+                  : `${BACKEND_BASE}${
                       post.owner.avatarUrl || "/uploads/default-avatar.png"
                     }`
               }

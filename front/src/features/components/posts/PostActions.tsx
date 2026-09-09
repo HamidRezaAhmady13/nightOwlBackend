@@ -1,7 +1,7 @@
 "use client";
 
 import { formatCount } from "@/features/utils/formatCount";
-import { Post, UserPreview } from "@/features/types";
+import { Post, PostActionsProps, UserPreview } from "@/features/types";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
@@ -14,12 +14,7 @@ import { useDeletePost } from "@/features/hooks/useDeletePost";
 import ConfirmModal from "../shared/ConfirmModal";
 import EditPostModal from "./EditPostModal";
 import api from "@/features/lib/api";
-
-export type PostActionsProps = {
-  post: Post;
-  currentUser: UserPreview;
-  onCommentClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
-};
+import { requireAuth } from "@/features/lib/auth";
 
 export default function PostActions({
   post,
@@ -30,11 +25,12 @@ export default function PostActions({
   const [showEditModal, setShowEditModal] = useState(false);
 
   const router = useRouter();
+
   const queryClient = useQueryClient();
 
   const deleteMutation = useDeletePost();
-  const toggleLike = useToggleLike(post.id, currentUser);
-  const isLiked = post.likedBy?.some((u) => u.id === currentUser.id);
+  const toggleLike = useToggleLike(post.id, currentUser!);
+  const isLiked = post.likedBy?.some((u) => u.id === currentUser?.id);
 
   const editMutation = useMutation({
     mutationFn: ({ postId, content }: { postId: string; content: string }) =>
@@ -59,7 +55,7 @@ export default function PostActions({
     deleteMutation.mutate(post.id, {
       onSuccess: () => {
         setShowDeleteModal(false);
-        router.push(`/users/${currentUser.username}?refresh=${Date.now()}`);
+        router.push(`/users/${currentUser?.username}?refresh=${Date.now()}`);
       },
     });
   };
@@ -77,6 +73,7 @@ export default function PostActions({
           className="u-bg-transparent hover:u-bg-transparent u-focus-not-visible w-3xl"
           onClick={(e) => {
             e.stopPropagation();
+            if (!requireAuth("like", !!currentUser)) return;
             toggleLike.mutate();
           }}
         >
@@ -92,6 +89,7 @@ export default function PostActions({
           className="u-bg-transparent hover:u-bg-transparent u-focus-not-visible w-3xl"
           onClick={(e) => {
             e.stopPropagation();
+            if (!requireAuth("see the comments", !!currentUser)) return;
             onCommentClick?.(e);
           }}
         >
@@ -101,7 +99,19 @@ export default function PostActions({
           </span>
         </Button>
 
-        <CommentForm postId={post.id} className="max-w-lg" />
+        {currentUser ? (
+          <CommentForm postId={post.id} className="max-w-lg" />
+        ) : (
+          <div
+            className="max-w-lg text-sm text-gray-500 cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation();
+              requireAuth("leave a comment", !!currentUser);
+            }}
+          >
+            Log in to comment...
+          </div>
+        )}
       </div>
 
       <div className="mb-xl u-flex-between">

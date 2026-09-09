@@ -7,7 +7,7 @@ export default function Notifs() {
 
   useEffect(() => {
     if (!socket) return;
-    const onNew = (p: any) => console.log("notif", p);
+    const onNew = (p: any) => null;
     socket.on("notification:new", onNew);
     return () => {
       socket.off("notification:new", onNew); // wrapped in block so cleanup returns void

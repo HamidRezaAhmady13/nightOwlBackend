@@ -19,8 +19,10 @@ import {
   getPostImages,
   getVideoVariants,
 } from "@/features/utils/extractPostMedia";
-import { API_URL } from "@/features/lib/api";
+import { BACKEND_BASE } from "@/features/lib/api";
 import PostFiles from "./PostFiles";
+import { GeneralLink } from "../shared/GeneralLink";
+import { createSlug } from "@/features/lib/seo";
 
 export default function PostMedia({
   post,
@@ -55,7 +57,7 @@ export default function PostMedia({
     if (container) videoRef.current = container.querySelector("video");
   }, [post.id]);
 
-  const posterImg = poster ? `${API_URL}${poster.url}` : undefined;
+  const posterImg = poster ? `${BACKEND_BASE}${poster.url}` : undefined;
   const known = poster ? { w: 1200, h: 900 } : undefined;
   const isVertical = known ? known.h > known.w : false;
   const isSquare = known ? known.h === known.w : false;
@@ -69,11 +71,15 @@ export default function PostMedia({
       : "";
 
   return (
-    <div className="space-y-md" id={`post-media-${post.id}`}>
-      {images && <PostGallery mode={mode} images={images} />}
+    <div className="space-y-md " id={`post-media-${post.id}`}>
+      {images && (
+        <GeneralLink href={`/post/${post.id}/{${createSlug(post.content)}`}>
+          <PostGallery mode={mode} images={images} />
+        </GeneralLink>
+      )}
       {videoVariants.length > 0 && (
         <div
-          className="w-full max-w-3xl mx-auto"
+          className="w-full max-w-3xl mx-auto  "
           id={`video-container-${post.id}`}
         >
           <MediaWrapper mode={mode} aspectClass={ratioClass}>
@@ -100,7 +106,7 @@ export default function PostMedia({
                   keyboardShortcut={false}
                   src={videoVariants.map((v) => ({
                     quality: v.quality ?? "auto",
-                    url: `${API_URL}${v.url}`,
+                    url: `${BACKEND_BASE}${v.url}`,
                   }))}
                   poster={posterImg}
                   isDark={isDark}

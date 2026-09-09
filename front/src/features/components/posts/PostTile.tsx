@@ -5,7 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import React from "react";
 import { GeneralLink } from "../shared/GeneralLink";
 import { MdOndemandVideo } from "react-icons/md";
-import { API_URL } from "@/features/lib/api";
+import { BACKEND_BASE } from "@/features/lib/api";
 
 function isVideo(url?: string | null) {
   if (!url) return false;
@@ -19,10 +19,8 @@ function isImage(url?: string | null) {
 
 export default function PostTile({
   post,
-  onClick,
 }: {
-  post: { id: string; imageUrl?: string | null };
-  onClick?: () => void;
+  post: { id: string; imageUrl?: string | null; content?: string };
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -45,7 +43,7 @@ export default function PostTile({
 
   return (
     <GeneralLink
-      href={`/post/${post.id}`}
+      href={`/post/${post.id}/${post.content}`}
       className="relative w-full aspect-square u-focus-not-visible"
       onClick={handleLinkClick}
     >
@@ -60,7 +58,7 @@ export default function PostTile({
         {post.imageUrl ? (
           isImage(post.imageUrl) ? (
             <Image
-              src={`${API_URL}${post.imageUrl}`}
+              src={`${BACKEND_BASE}${post.imageUrl}`}
               alt="Post media"
               fill
               style={{ objectFit: "cover" }}
@@ -68,7 +66,7 @@ export default function PostTile({
           ) : isVideo(post.imageUrl) ? (
             <>
               <video
-                src={`${API_URL}${post.imageUrl}`}
+                src={`${BACKEND_BASE}${post.imageUrl}`}
                 className="w-full h-full object-cover"
                 muted
                 playsInline

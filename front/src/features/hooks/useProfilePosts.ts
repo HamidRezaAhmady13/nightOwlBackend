@@ -1,13 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import api from "../lib/api";
-
-type PostPreview = {
-  id: string;
-  imageUrl: string | null;
-  createdAt: string;
-  likesCount: number;
-  commentsCount: number;
-};
+import { PostPreview } from "../types";
 
 export function useProfilePosts({
   limit = 24,
@@ -35,12 +28,11 @@ export function useProfilePosts({
         ? `/users/${encodeURIComponent(username)}/posts?${qs.toString()}`
         : `/posts?${qs.toString()}`;
     },
-    [limit, username]
+    [limit, username],
   );
 
   const fetchPage = useCallback(
     async (cursor?: string | null, replace = false) => {
-      // avoid starting a fetch while one is already in flight
       if (inFlightRef.current !== null) {
         return null;
       }
@@ -52,8 +44,7 @@ export function useProfilePosts({
       try {
         const url = buildUrl(cursor ?? undefined);
 
-        const res = await api.get(url); // keep your api helper
-        // if another request started after this one, ignore this result
+        const res = await api.get(url);
         if (inFlightRef.current !== reqId) {
           return null;
         }
@@ -63,7 +54,6 @@ export function useProfilePosts({
           ? data.items
           : [];
 
-        // replace or append (we dedupe by id to be safe)
         setItems((prev) => {
           if (replace) return pageItems;
           const ids = new Set(prev.map((p) => p.id));
@@ -82,16 +72,14 @@ export function useProfilePosts({
         setLoading(false);
       }
     },
-    [buildUrl]
+    [buildUrl],
   );
 
-  // initial load: single fetch that replaces items
   useEffect(() => {
     setItems([]);
     setNextCursor(null);
     setHasMore(true);
     fetchPage(null, true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [username, limit]);
 
   const loadMore = useCallback(() => {

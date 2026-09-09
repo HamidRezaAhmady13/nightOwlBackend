@@ -3,7 +3,7 @@ import FormInput from "../forms/FormInput";
 import Button from "../shared/Button";
 import { useAddComment } from "@/features/hooks/useAddComment";
 import { CommentFormProps } from "@/features/types";
-import { useCurrentUser } from "../AuthContext";
+import { useUserStore } from "@/features/store/userStore";
 
 const limit = process.env.PAGE_LIMIT_ENV || 10;
 
@@ -16,7 +16,7 @@ export default function CommentForm({
   autoFocus,
   limit,
 }: CommentFormProps) {
-  const { user: currentUser } = useCurrentUser();
+  const currentUser = useUserStore((s) => s.user);
   const [commentText, setCommentText] = useState(initialText || "");
   const addCommentMutation = useAddComment(currentUser, limit);
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
@@ -38,7 +38,7 @@ export default function CommentForm({
         onError: () => {
           submittingRef.current = false;
         },
-      }
+      },
     );
   };
 
@@ -68,9 +68,12 @@ export default function CommentForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className={`u-flex-center gap-sm w-full ${className || ""}`}
+      className={`u-flex-center gap-sm w-full   ${className || ""}`}
     >
-      <div className="flex-1 h-2xl u-flex-center">
+      <div
+        className="flex-1 h-2xl u-flex-center min-w-0"
+        style={{ flex: "1 1 0%", width: "100%" }}
+      >
         <FormInput
           autoFocus={autoFocus}
           ref={inputRef}
@@ -79,7 +82,7 @@ export default function CommentForm({
           multiline
           rows={1}
           onChange={(e) => setCommentText(e.target.value)}
-          wrapperClassName="flex-1 h-2xl u-flex-center"
+          wrapperClassName="flex-1 h-2xl u-flex-center w-full "
           onKeyDown={handleInputKeyDown}
           onMouseDown={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
@@ -92,6 +95,7 @@ export default function CommentForm({
         disabled={addCommentMutation.isPending}
         height="md"
         onClick={(e) => e.stopPropagation()}
+        className="min-w-[70px] flex-shrink-0"
       >
         {addCommentMutation.isPending ? "..." : "Post"}
       </Button>

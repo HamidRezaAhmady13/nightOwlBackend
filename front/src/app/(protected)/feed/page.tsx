@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import Button from "@/features/components/shared/Button";
-import Spinner from "@/features/components/shared/Spinner";
+
 import PostShell from "@/features/components/posts/PostShell";
 import CommentsModal from "@/features/components/comment/CommentsModal";
 import { usePaginationQuery } from "@/features/hooks/usePaginationQuery";
@@ -17,26 +17,25 @@ export default function FeedPage() {
   ``;
   const [activePostId, setActivePostId] = useState<string | null>(null);
 
-  if (isLoading) return <Spinner />;
+  if (isLoading) return null;
 
   return (
-    <div className="  ">
+    <div className=" relative w-full aspect-square u-focus-not-visible ">
+      {" "}
       {posts.map((post) => (
         <PostShell
-          key={post.id}
           post={post}
+          key={post.id}
           onCommentClick={() => setActivePostId(post.id)}
           mode="feed"
         />
       ))}
-
       {activePostId && (
         <CommentsModal
           postId={activePostId}
           onClose={() => setActivePostId(null)}
         />
       )}
-
       {posts.length < total && (
         <div className="u-flex-center">
           <Button

@@ -1,7 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/features/lib/api";
 import { queryKeys } from "@/features/utils/queryKeys";
-import getToken from "@/features/lib/getMeAndUsers";
 import { User, UserPreview } from "@/features/types";
 
 export function useUnfollowUser(username: string) {
@@ -12,13 +11,13 @@ export function useUnfollowUser(username: string) {
       api.delete(`/users/${encodeURIComponent(username)}/unfollow`),
     onMutate: async () => {
       await queryClient.cancelQueries({
-        queryKey: queryKeys.user.current(getToken() ?? ""),
+        queryKey: queryKeys.user.current(),
       });
       const prev = queryClient.getQueryData<User | undefined>(
-        queryKeys.user.current(getToken() ?? ""),
+        queryKeys.user.current(),
       );
       queryClient.setQueryData<User | undefined>(
-        queryKeys.user.current(getToken() ?? ""),
+        queryKeys.user.current(),
         (old) =>
           old
             ? {
@@ -33,17 +32,14 @@ export function useUnfollowUser(username: string) {
     },
     onError: (_err, _vars, ctx) => {
       if (ctx?.prev)
-        queryClient.setQueryData(
-          queryKeys.user.current(getToken() ?? ""),
-          ctx.prev,
-        );
+        queryClient.setQueryData(queryKeys.user.current(), ctx.prev);
     },
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.user.byUsername(username),
       });
       queryClient.invalidateQueries({
-        queryKey: queryKeys.user.current(getToken() ?? ""),
+        queryKey: queryKeys.user.current(),
       });
     },
   });

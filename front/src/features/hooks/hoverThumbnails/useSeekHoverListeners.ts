@@ -12,7 +12,7 @@ import type { SeekListeners } from "./canvas.types";
 
 export function useSeekHoverListeners(
   seekBarSelector?: string,
-  onPointerX?: (x: number) => void
+  onPointerX?: (x: number) => void,
 ) {
   const boundSeekRef = useRef<HTMLElement | null>(null);
   const cachedRectRef = useRef<DOMRect | null>(null);
@@ -24,7 +24,7 @@ export function useSeekHoverListeners(
   const computePosition = (
     rect: DOMRect,
     canvasHeightPx: number,
-    gapPx = 8
+    gapPx = 8,
   ) => {
     const root = getMountRoot();
     if (root === document.body)
@@ -39,12 +39,10 @@ export function useSeekHoverListeners(
   useEffect(() => {
     const onEnter = () => {
       const seekEl = boundSeekRef.current ?? findSeekEl(seekBarSelector);
-      // console.log("enter", !!seekEl);
-      // console.log("ENTER rect.top", cachedRectRef?.current?.top);
+
       isOverSeekRef.current = true;
       lastMoveTs.current = Date.now();
       utilsMeasure(seekEl, cachedRectRef);
-      // console.log(cachedRectRef.current?.top);
     };
     const onLeave = () => {
       isOverSeekRef.current = false;
@@ -55,8 +53,6 @@ export function useSeekHoverListeners(
     };
 
     const onMove = (ev: MouseEvent) => {
-      // console.log(ev.x, ev.y);
-
       lastMoveTs.current = Date.now();
       const seekEl = boundSeekRef.current ?? findSeekEl(seekBarSelector);
       if (!cachedRectRef.current) utilsMeasure(seekEl, cachedRectRef);
@@ -72,7 +68,6 @@ export function useSeekHoverListeners(
       return seekEl;
     };
     const pointerMoveHandler = (e: PointerEvent) => {
-      // console.log("pointerMoveHandler");
       lastMoveTs.current = Date.now();
       const seekEl = boundSeekRef.current ?? findSeekEl(seekBarSelector);
       const overSeek = seekEl
@@ -83,9 +78,6 @@ export function useSeekHoverListeners(
         if (!cachedRectRef.current) utilsMeasure(seekEl, cachedRectRef);
         else onPointerX?.(e.clientX);
       }
-
-      // if (overSeek && !cachedRectRef.current)
-      //   utilsMeasure(seekEl, cachedRectRef);
     };
     const bound = ensureBound();
 

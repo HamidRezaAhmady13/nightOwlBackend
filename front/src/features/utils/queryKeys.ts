@@ -24,10 +24,9 @@ export const queryKeys = {
   },
 
   user: {
-    current: (token: string | undefined) => ["currentUser", { token }] as const,
-
+    // current: (token: string | undefined) => ["currentUser", { token }] as const,
+    current: () => ["currentUser"] as const,
     byId: (userId: string | undefined) => ["currentUser", { userId }] as const,
-
     byUsername: (username: string | undefined) => ["user", { username }],
   },
 

@@ -6,6 +6,7 @@ import api from "../lib/api";
 
 async function fetchPosts(limit: number, page: number): Promise<FeedPage> {
   const res = await api.get(`/posts/feed?limit=${limit}&page=${page}`);
+
   return res.data;
 }
 function getNextPageParam(last: FeedPage, pages: FeedPage[]) {

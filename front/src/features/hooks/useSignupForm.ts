@@ -108,7 +108,10 @@ export function useSignupForm() {
       } else {
         setErrors((e) => ({ ...e, password: errorMsg }));
       }
+      // toast.error(JSON.stringify(err));
       toast.error(errorMsg);
+      const errMsg =
+        err?.response?.data?.message || err?.message || JSON.stringify(err);
     } finally {
       setLoading(false);
     }

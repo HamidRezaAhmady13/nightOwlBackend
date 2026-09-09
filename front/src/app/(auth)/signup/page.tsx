@@ -17,6 +17,7 @@ export default function SignupPage() {
       <h1 className="text-2xl u-text-secondary-soft   font-bold mb-lg ">
         Create Account
       </h1>
+
       <form
         onSubmit={(e) => {
           e.preventDefault();
