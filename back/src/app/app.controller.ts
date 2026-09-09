@@ -1,5 +1,7 @@
+// import { AppService } from '@/app/app.service';
+import { LineLogger } from '@/common/utils/lineLogger';
 import { Controller, Get } from '@nestjs/common';
-import { AppService } from 'src/app/app.service';
+import { AppService } from './app.service';
 
 @Controller()
 export class AppController {
@@ -7,7 +9,7 @@ export class AppController {
 
   @Get()
   getHello(): string {
-    console.log('hello app');
+    new LineLogger().log('hello app');
 
     return this.appService.getHello();
   }

@@ -6,6 +6,28 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 
 @Injectable()
+export class OptionalJwtAuthGuard extends AuthGuard('jwt') {
+  async canActivate(context: ExecutionContext) {
+    const request = context.switchToHttp().getRequest();
+    const token = request.headers?.authorization || request.cookies?.access;
+    if (!token) return true;
+
+    try {
+      const result = (await super.canActivate(context)) as boolean;
+      return result;
+    } catch {
+      // If token invalid, still allow but user stays undefined
+      return true;
+    }
+  }
+
+  handleRequest(err, user) {
+    // Return user even if err; if no user, return null
+    return user || null;
+  }
+}
+
+@Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
   private static lastLog = new Map<string, number>();
 
@@ -40,13 +62,11 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
 
     if (!user) {
       let customMsg = infoMsg;
-      if (infoMsg === 'jwt expired') {
-        customMsg = 'ACCESS_TOKEN_EXPIRED'; // or any string you want
-      } else if (infoMsg === 'invalid signature') {
+      if (infoMsg === 'jwt expired') customMsg = 'ACCESS_TOKEN_EXPIRED';
+      else if (infoMsg === 'invalid signature')
         customMsg = 'ACCESS_TOKEN_INVALID';
-      }
-
-      throw new UnauthorizedException(customMsg);
+      else if (infoMsg === 'No auth token') customMsg = 'NO_ACCESS_TOKEN';
+      throw new UnauthorizedException({ message: customMsg, code: customMsg });
     }
 
     if (now - (JwtAuthGuard.lastLog.get('success') ?? 0) > 60_000) {

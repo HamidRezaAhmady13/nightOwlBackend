@@ -1,12 +1,13 @@
+import { LineLogger } from '@/common/utils/lineLogger';
+import { RedisService } from '@/core/redis/redis.service';
+import { Comment } from '@/modules/comment/entity/comment.entity';
+import { NotificationType } from '@/modules/notifications/dto/ntfDto';
+import { NotificationService } from '@/modules/notifications/notification.service';
+import { Post } from '@/modules/post/entity/posts.entity';
+import { SocketService } from '@/modules/socket/socket.service';
+import { User } from '@/modules/user/entity/user.entity';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { RedisService } from 'src/core/redis/redis.service';
-import { Comment } from 'src/modules/comment/entity/comment.entity';
-import { NotificationType } from 'src/modules/notifications/dto/ntfDto';
-import { NotificationService } from 'src/modules/notifications/notification.service';
-import { Post } from 'src/modules/post/entity/posts.entity';
-import { SocketService } from 'src/modules/socket/socket.service';
-import { User } from 'src/modules/user/entity/user.entity';
 import { Repository } from 'typeorm';
 
 @Injectable()
@@ -61,9 +62,6 @@ export class CommentService {
     });
     const savedComment = await this.commentRepo.save(comment);
 
-    console.log(post.owner);
-    console.log(post.owner.id);
-
     if (post.owner && post.owner.id && post.owner.id !== author.id) {
       const ntf = await this.notificationService.createForUser(post.owner.id, {
         type: NotificationType.Comment,
@@ -87,7 +85,7 @@ export class CommentService {
 
   async getCommentsForPost(
     postId: string,
-    currentUserId: string,
+    currentUserId?: string,
     page = 1,
     limit = 10,
   ) {
@@ -121,7 +119,7 @@ export class CommentService {
     }));
   }
 
-  async getReplies(commentId: string, currentUserId: string) {
+  async getReplies(commentId: string, currentUserId?: string) {
     const replies = await this.commentRepo.find({
       where: { parentComment: { id: commentId } },
       relations: ['author', 'likedByUsers'],
@@ -170,7 +168,8 @@ export class CommentService {
 
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
-
+    new LineLogger().log(user.email);
+    new LineLogger().log(comment);
     const alreadyLiked = comment.likedByUsers.some((u) => u.id === userId);
     if (alreadyLiked) return comment; // no-op if already liked
 
@@ -182,7 +181,6 @@ export class CommentService {
     await this.redis.incr(`comment:${commentId}:likes`);
     // ntf
     const owner = comment.author;
-    console.log(comment);
     if (owner && owner.id !== userId) {
       const ntf = await this.notificationService.createForUser(owner.id, {
         type: NotificationType.Like,

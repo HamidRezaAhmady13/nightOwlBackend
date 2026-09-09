@@ -1,9 +1,16 @@
+import { CurrentUser } from '@/common/decorators/current-user.decorator';
+import { RedisService } from '@/core/redis/redis.service';
+import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
+import { PostService } from '@/modules/post/post.service';
+import { SafeUserDto } from '@/modules/user/dto/safe-user.dto';
+import { UpdateUserDto } from '@/modules/user/dto/update-user.dto';
+import { User } from '@/modules/user/entity/user.entity';
+import { UserService } from '@/modules/user/user.service';
 import {
   Body,
   Controller,
   Delete,
   Get,
-  Logger,
   NotFoundException,
   Param,
   Patch,
@@ -16,32 +23,34 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import * as fs from 'fs';
 import { diskStorage } from 'multer';
 import * as path from 'path';
 import { extname } from 'path';
-import { CurrentUser } from 'src/common/decorators/current-user.decorator';
-import { RedisService } from 'src/core/redis/redis.service';
-import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
-import { PostService } from 'src/modules/post/post.service';
-import { SafeUserDto } from 'src/modules/user/dto/safe-user.dto';
-import { UpdateUserDto } from 'src/modules/user/dto/update-user.dto';
-import { User } from 'src/modules/user/entity/user.entity';
-import { UserService } from 'src/modules/user/user.service';
+import { PostQueryService } from '../post/post-query.service';
 
-@UseGuards(JwtAuthGuard)
 @Controller('users')
 export class UserController {
   constructor(
     private readonly userService: UserService,
     private readonly postService: PostService,
     private readonly redis: RedisService,
-    private readonly config: ConfigService,
+    private readonly postQueryService: PostQueryService,
   ) {}
 
+  @UseGuards(JwtAuthGuard)
+  @Post(':username/follow')
+  followUser(
+    @Param('username') username: string,
+    @CurrentUser() currentUser: User,
+  ) {
+    const decoded = decodeURIComponent(username);
+    return this.userService.followUser(currentUser.id, decoded);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get('me')
   async getMe(
     @CurrentUser() user: User,
@@ -52,7 +61,6 @@ export class UserController {
       (user as any).id ?? (user as any).userId ?? (user as any).sub;
     if (!userId) throw new UnauthorizedException('Not authenticated');
 
-    // 1. Try cache first
     const cacheKey = `user:${userId}`;
     const cached = await this.redis.get(cacheKey);
     let fullUser: SafeUserDto;
@@ -72,6 +80,38 @@ export class UserController {
     return fullUser;
   }
 
+  @Get('search')
+  async fullSearch(
+    @Query('q') query: string,
+    @Query('limit') limit = 20,
+    @Query('page') page = 1,
+  ) {
+    return this.userService.searchUsers(query, Number(limit), Number(page));
+  }
+
+  @Get(':username/posts')
+  async getPostsByUsername(
+    @Param('username') username: string,
+    @Query('limit') limit = '24',
+    @Query('cursor') cursor?: string,
+  ) {
+    const decoded = decodeURIComponent(username);
+    const user = await this.userService.findByUsername(decoded);
+    if (!user) throw new NotFoundException('User not found');
+    return this.postQueryService.getPostsCursor(user.id, {
+      limit: +limit,
+      cursor,
+    });
+  }
+
+  @Get(':username')
+  getUser(@Param('username') username: string) {
+    const decoded = decodeURIComponent(username);
+
+    return this.userService.findByUsername(decoded);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Patch('theme')
   async updateTheme(
     @Req() req,
@@ -90,6 +130,7 @@ export class UserController {
     return updatedUser;
   }
 
+  @UseGuards(JwtAuthGuard)
   @Patch('me')
   @UseInterceptors(
     FileInterceptor('avatar', {
@@ -122,49 +163,7 @@ export class UserController {
     return this.userService.updateUser(currentUser.id, payload);
   }
 
-  @Delete('me/avatar')
-  async removeAvatar(@CurrentUser() currentUser: User) {
-    new Logger.log('update', 'payload');
-    await this.userService.updateUser(currentUser.id, {
-      avatarUrl: null,
-    } as any);
-    return { message: 'Avatar removed' };
-  }
-
-  @Get('profile')
-  getProfile(@Req() req: Request) {
-    if (!req.user) throw new UnauthorizedException('Not authenticated');
-    return req.user;
-  }
-
-  @Get('search')
-  async fullSearch(
-    @Query('q') query: string,
-    @Query('limit') limit = 20,
-    @Query('page') page = 1,
-  ) {
-    return this.userService.searchUsers(query, Number(limit), Number(page));
-  }
-
-  @Delete('/delete-avatar/:id/avatar')
-  async deleteAvatar(
-    @Param('id') userId: string,
-    @Req() req: Request, // optional auth
-  ) {
-    // Optionally verify req.user.id === userId
-    await this.userService.removeAvatar(userId);
-    return { message: 'Avatar removed' };
-  }
-
-  @Post(':username/follow')
-  followUser(
-    @Param('username') username: string,
-    @CurrentUser() currentUser: User,
-  ) {
-    const decoded = decodeURIComponent(username);
-    return this.userService.followUser(currentUser.id, decoded);
-  }
-
+  @UseGuards(JwtAuthGuard)
   @Delete(':username/unfollow')
   unfollowUser(
     @Param('username') username: string,
@@ -174,30 +173,11 @@ export class UserController {
     return this.userService.unfollowUser(currentUser.id, decoded);
   }
 
-  @Get('/id/:id')
-  getUserById(@Param('id') userId: string) {
-    const decoded = decodeURIComponent(userId);
-
-    return this.userService.findByUserId(userId);
-  }
-
-  @Get(':username/posts')
-  async getPostsByUsername(
-    @Param('username') username: string,
-    @Query('limit') limit = '24',
-    @Query('cursor') cursor?: string,
-  ) {
-    // service should find the user by username, then get posts for that user's id
-    const decoded = decodeURIComponent(username);
-    const user = await this.userService.findByUsername(decoded);
-    if (!user) throw new NotFoundException('User not found');
-    return this.postService.getPostsCursor(user.id, { limit: +limit, cursor });
-  }
-
-  @Get(':username')
-  getUser(@Param('username') username: string) {
-    const decoded = decodeURIComponent(username);
-
-    return this.userService.findByUsername(decoded);
+  @UseGuards(JwtAuthGuard)
+  @Delete('me/avatar')
+  async removeMyAvatar(@CurrentUser() currentUser: User) {
+    // This calls the service method that wipes the file from disk AND clears the DB/Redis
+    await this.userService.removeAvatar(currentUser.id);
+    return { message: 'Avatar removed and file cleaned up successfully' };
   }
 }

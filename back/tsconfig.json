@@ -1,7 +1,9 @@
 {
   "compilerOptions": {
     "module": "commonjs",
+    "ignoreDeprecations": "5.0",
     "declaration": true,
+    "declarationDir": "./dist",
     "removeComments": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
@@ -10,9 +12,9 @@
     "sourceMap": true,
     "outDir": "./dist",
     "rootDir": "./src",
-    "baseUrl": "./",
+    "baseUrl": "./src",
     "paths": {
-      "src/*": ["src/*"]
+      "@/*": ["*"]
     },
     "incremental": false,
     "skipLibCheck": true,
@@ -24,5 +26,5 @@
     "strictPropertyInitialization": false
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["uploads", "test"]
+  "exclude": ["uploads", "dist", "test"]
 }

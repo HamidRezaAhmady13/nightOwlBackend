@@ -1,9 +1,10 @@
+import { AppModule } from '@/app/app.module';
+import { PostService } from '@/modules/post/post.service';
+import { UserService } from '@/modules/user/user.service';
 import { NestFactory } from '@nestjs/core';
 import * as fs from 'fs';
 import * as path from 'path';
-import { AppModule } from 'src/app/app.module';
-import { PostService } from 'src/modules/post/post.service';
-import { UserService } from 'src/modules/user/user.service';
+import { LineLogger } from './common/utils/lineLogger';
 
 function copyFromSrcToTemp(filename: string): string {
   const src = path.resolve(process.cwd(), 'uploads', filename);
@@ -73,9 +74,9 @@ async function bootstrap() {
     );
   }
   await app.close();
-  console.log('Seed complete');
+  new LineLogger().log('Seed complete');
 }
 bootstrap().catch((err) => {
-  console.error('Seed failed:', err);
+  new LineLogger().error('Seed failed:', err);
   process.exit(1);
 });

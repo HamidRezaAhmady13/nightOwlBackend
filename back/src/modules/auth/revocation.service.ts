@@ -1,5 +1,5 @@
+import { RedisService } from '@/core/redis/redis.service';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { RedisService } from 'src/core/redis/redis.service';
 import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()

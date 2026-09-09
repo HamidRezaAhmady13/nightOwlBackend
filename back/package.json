@@ -6,15 +6,17 @@
   "private": true,
   "license": "UNLICENSED",
   "engines": {
-    "node": ">=20 <=23"
+    "node": ">=20 "
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "start": "npm run build && node dist/main.js",
+    "startDev": "npm run build && node dist/main(tlsversion).js",
     "start:prod": "node dist/main.js",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start:debug": "nest start --debug --watch",
     "start:dev": "NODE_ENV=development nest start --watch",
+    "start:dev:ssl": "ts-node-dev --respawn --transpile-only src/main.ts",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -46,6 +48,7 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
     "cookie-parser": "^1.4.7",
+    "dotenv": "^17.4.2",
     "ioredis": "^5.7.0",
     "joi": "^18.0.0",
     "mime-types": "^3.0.1",
@@ -96,7 +99,7 @@
     "typescript-eslint": "^8.20.0"
   },
   "_moduleAliases": {
-    "src": "dist"
+    "@": "dist"
   },
   "jest": {
     "moduleFileExtensions": [

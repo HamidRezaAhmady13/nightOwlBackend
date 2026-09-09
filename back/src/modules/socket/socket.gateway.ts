@@ -1,4 +1,5 @@
-import { Logger } from '@nestjs/common';
+import { LineLogger } from '@/common/utils/lineLogger';
+import { SocketService } from '@/modules/socket/socket.service';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import {
@@ -10,12 +11,11 @@ import {
 } from '@nestjs/websockets';
 import * as cookie from 'cookie';
 import { Server, Socket } from 'socket.io';
-import { SocketService } from 'src/modules/socket/socket.service';
 
 @WebSocketGateway({
   path: '/socket.io',
   cors: {
-    origin: ['http://localhost:3000', 'https://hamidreza-ahmadi.sbs'],
+    origin: ['https://127.0.0.1:3000', 'https://hamidreza-ahmadi.sbs'],
     credentials: true,
   },
 })
@@ -23,7 +23,7 @@ export class SocketGateway
   implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit
 {
   @WebSocketServer() server: Server;
-  private readonly logger = new Logger(SocketGateway.name);
+  private readonly logger = new LineLogger();
 
   constructor(
     private readonly socketSvc: SocketService,
@@ -33,18 +33,18 @@ export class SocketGateway
 
   afterInit() {
     this.socketSvc.setServer(this.server);
-    this.logger.log('line32 Socket.IO initialized ');
   }
 
   async handleConnection(client: Socket) {
     try {
-      this.logger.log(`line37 Connection attempt from client ${client.id}`);
+      this.logger.log(`Connection attempt from client ${client.id}`);
+
       let token =
         (client.handshake.auth && (client.handshake.auth as any).token) || null;
 
       if (!token && client.handshake.headers.cookie) {
         const cookies = cookie.parse(client.handshake.headers.cookie);
-        token = cookies.access || cookies.refresh;
+        token = cookies.access || null;
       }
 
       if (!token) throw new Error('no token');
@@ -59,12 +59,9 @@ export class SocketGateway
       client.join(`user:${client.data.userId}`);
       this.socketSvc.registerSocket(client);
 
-      this.logger.log(
-        `line58 Client ${client.id} joined user:${client.data.userId}`,
-      );
+      this.logger.log(`Client ${client.id} joined user:${client.data.userId}`);
     } catch (err) {
       this.logger.error(`Socket auth failed: ${(err as Error).message || err}`);
-      this.logger.error(JSON.stringify(err));
 
       client.emit('unauthorized');
       client.disconnect(true);
@@ -73,8 +70,8 @@ export class SocketGateway
 
   handleDisconnect(client: Socket) {
     this.socketSvc.unregisterSocket(client);
-    this.logger.log(`line70 Client disconnected: ${client.id}`);
+    this.logger.warn(
+      `Client ${client.id} disconnected from user:${client.data.userId}`,
+    );
   }
 }
-// hamidraven1313@gmail.com
-// hamidraven1414@gmail.com

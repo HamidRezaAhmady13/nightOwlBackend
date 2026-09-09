@@ -1,5 +1,5 @@
+import { SocketService } from '@/modules/socket/socket.service';
 import { Test, TestingModule } from '@nestjs/testing';
-import { SocketService } from 'src/modules/socket/socket.service';
 
 describe('SocketService', () => {
   let service: SocketService;

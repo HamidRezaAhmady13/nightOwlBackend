@@ -1,15 +1,16 @@
-import { InjectQueue } from '@nestjs/bull';
-import { Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Queue } from 'bull';
-import { buildNotification } from 'src/common/utils/buildNotification';
+import { buildNotification } from '@/common/utils/buildNotification';
+import { LineLogger } from '@/common/utils/lineLogger';
 import {
   CreateNotificationWithtypesDto,
   FeedPage,
   NotificationType,
-} from 'src/modules/notifications/dto/ntfDto';
-import { NotificationEntity } from 'src/modules/notifications/entity/notification.entity';
-import { SocketService } from 'src/modules/socket/socket.service';
+} from '@/modules/notifications/dto/ntfDto';
+import { NotificationEntity } from '@/modules/notifications/entity/notification.entity';
+import { SocketService } from '@/modules/socket/socket.service';
+import { InjectQueue } from '@nestjs/bull';
+import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Queue } from 'bull';
 import { DeepPartial, IsNull, Repository } from 'typeorm';
 
 @Injectable()
@@ -20,7 +21,7 @@ export class NotificationService {
     @InjectQueue('notifications') private queue: Queue,
     private readonly socketService: SocketService,
   ) {}
-  private readonly logger = new Logger(NotificationService.name);
+  private readonly logger = new LineLogger();
 
   async createForUser(userId: string, dto: CreateNotificationWithtypesDto) {
     const built = buildNotification(dto);
@@ -195,9 +196,8 @@ export class NotificationService {
         status: 'delivered',
       });
       this.socketService.emitToUser(ntf.userId, 'notification', ntf);
-      this.logger.log(`delivered ${notificationId} -> user:${ntf.userId}`);
     } catch (err) {
-      this.logger.error(`deliver failed ${notificationId}`, err);
+      this.logger.error(`deliver failed ${notificationId} ${err}`);
       throw err; // let Bull retry according to attempts/backoff
     }
   }

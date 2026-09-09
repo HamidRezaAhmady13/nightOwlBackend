@@ -1,10 +1,11 @@
+import { LineLogger } from '@/common/utils/lineLogger';
 import { InjectQueue } from '@nestjs/bull';
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { Queue } from 'bull';
 
 @Injectable()
 export class NotificationsQueueMonitor implements OnModuleInit {
-  private readonly logger = new Logger(NotificationsQueueMonitor.name);
+  private readonly logger = new LineLogger();
   constructor(@InjectQueue('notifications') private queue: Queue) {}
 
   async onModuleInit() {
@@ -28,8 +29,6 @@ export class NotificationsQueueMonitor implements OnModuleInit {
   }
 
   private async moveToDlq(job: any, err: Error | any) {
-    // Simple DLQ strategy: save job info to a DLQ Redis list or a DB table.
-    // Keep it small: push JSON to a Redis list named "notifications:dlq"
     try {
       const payload = {
         id: job.id,

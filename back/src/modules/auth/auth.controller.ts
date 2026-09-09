@@ -1,3 +1,6 @@
+import { DEFAULT_REFRESH_MS } from '@/common/constants';
+import { CurrentUser } from '@/common/decorators/current-user.decorator';
+import { AuthenticatedRequest } from '@/common/interfaces/user-request.interface';
 import {
   Body,
   Controller,
@@ -12,16 +15,14 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { AuthGuard } from '@nestjs/passport';
 import { Request, Response } from 'express';
-import { DEFAULT_REFRESH_MS } from 'src/common/constants';
-import { CurrentUser } from 'src/common/decorators/current-user.decorator';
-import { AuthenticatedRequest } from 'src/common/interfaces/user-request.interface';
-import { LineLogger } from 'src/common/utils/lineLogger';
-import { AuthService } from 'src/modules/auth/auth.service';
+
+import { LineLogger } from '@/common/utils/lineLogger';
+import { AuthService } from '@/modules/auth/auth.service';
 import {
   JwtAuthGuard,
   JwtRefreshGuard,
-} from 'src/modules/auth/guards/jwt-auth.guard';
-import { CreateUserDto } from 'src/modules/user/dto/create-user.dto';
+} from '@/modules/auth/guards/jwt-auth.guard';
+import { CreateUserDto } from '@/modules/user/dto/create-user.dto';
 import { User } from '../user/entity/user.entity';
 
 @Controller('auth')
@@ -32,22 +33,22 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly config: ConfigService,
   ) {
-    this.refreshTtlMs = this.config.get<number>(
-      'REFRESH_TTL_MS',
-      DEFAULT_REFRESH_MS,
+    this.refreshTtlMs = Number(
+      this.config.get<number>('REFRESH_TTL_MS', DEFAULT_REFRESH_MS),
     );
   }
 
   private cookieOptions(httpOnly: boolean, maxAge?: number) {
-    const secure = this.config.get<string>('COOKIE_SECURE', 'false') === 'true';
-    const sameSite = secure ? ('none' as const) : ('lax' as const);
-    const domain = this.config.get<string>('COOKIE_DOMAIN') || undefined;
+    const secure = true;
+    const sameSite = 'none';
+    // const domain = this.config.get<string>('COOKIE_DOMAIN') || undefined;
     const opts: any = {
       httpOnly,
       secure,
       sameSite,
       path: '/',
-      domain,
+      // domain,
+      maxAge: +this.refreshTtlMs,
     };
     if (typeof maxAge === 'number') opts.maxAge = maxAge;
     return opts;
@@ -68,15 +69,19 @@ export class AuthController {
       refresh_token,
       this.cookieOptions(true, this.refreshTtlMs),
     );
+    res.cookie(
+      'access',
+      access_token,
+      this.cookieOptions(true, 15 * 60 * 1000),
+    );
     return { access_token, username };
   }
-
+  //
   @Post('signin')
   async signIn(
     @Body() { email, password }: { email: string; password: string },
     @Res({ passthrough: true }) res: Response,
   ) {
-    new LineLogger.log('signin', 'signin');
     const { access_token, refresh_token } = await this.authService.signIn(
       email,
       password,
@@ -85,12 +90,12 @@ export class AuthController {
     res.cookie(
       'refresh',
       refresh_token,
-      this.cookieOptions(true, this.refreshTtlMs),
+      this.cookieOptions(true, +this.refreshTtlMs),
     );
     res.cookie(
       'access',
       access_token,
-      this.cookieOptions(false, 15 * 60 * 1000),
+      this.cookieOptions(true, 15 * 60 * 1000),
     );
     return { access_token };
   }
@@ -102,6 +107,7 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const refreshJwt = req.cookies?.refresh;
+
     if (!refreshJwt) throw new UnauthorizedException('No refresh token');
     const { access_token, refresh_token, refreshJti } =
       await this.authService.refresh(refreshJwt);
@@ -123,6 +129,7 @@ export class AuthController {
   @Post('logout')
   logout(@Res({ passthrough: true }) res: Response) {
     res.clearCookie('refresh', { path: '/' });
+    res.clearCookie('access', { path: '/' });
     return { message: 'Logged out' };
   }
 
@@ -139,9 +146,9 @@ export class AuthController {
     const user = req.user;
 
     if (!user) {
-      console.warn('googleAuthRedirect: no user on request', {
-        query: req.query,
-      });
+      new LineLogger().warn(
+        `googleAuthRedirect: no user on request query:  ${req.query}`,
+      );
       throw new UnauthorizedException('user not found from provider');
     }
 
@@ -149,9 +156,8 @@ export class AuthController {
     try {
       tokens = await this.authService.handleProviderLogin(user);
     } catch (err) {
-      console.error('googleAuthRedirect: handleProviderLogin failed', {
-        message: (err as any)?.message ?? err,
-      });
+      new LineLogger().error(`googleAuthRedirect: handleProviderLogin failed
+        message: ${(err as any)?.message ?? err}`);
       throw new UnauthorizedException('failed to process provider login');
     }
 

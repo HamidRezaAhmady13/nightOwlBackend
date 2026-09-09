@@ -1,7 +1,7 @@
 import {
   CreateNotificationWithtypesDto,
   NotificationType,
-} from 'src/modules/notifications/dto/ntfDto';
+} from '@/modules/notifications/dto/ntfDto';
 
 export function buildNotification(dto: CreateNotificationWithtypesDto) {
   switch (dto.type) {

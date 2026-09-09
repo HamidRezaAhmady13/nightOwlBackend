@@ -9,13 +9,12 @@ import * as bcrypt from 'bcrypt';
 import { DataSource, Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
 
+import { RefreshToken } from '@/modules/auth/entity/refresh-token.entity';
+import { RevocationService } from '@/modules/auth/revocation.service';
+import { CreateUserDto } from '@/modules/user/dto/create-user.dto';
+import { UserService } from '@/modules/user/user.service';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { LineLogger } from 'src/common/utils/lineLogger';
-import { RefreshToken } from 'src/modules/auth/entity/refresh-token.entity';
-import { RevocationService } from 'src/modules/auth/revocation.service';
-import { CreateUserDto } from 'src/modules/user/dto/create-user.dto';
-import { UserService } from 'src/modules/user/user.service';
 
 interface JwtPayload {
   sub: string;
@@ -35,7 +34,6 @@ export class AuthService {
     private readonly config: ConfigService,
     @InjectRepository(RefreshToken) private rtRepo: Repository<RefreshToken>,
   ) {}
-  logger = new LineLogger('AuthService');
 
   private async createTokens(userId: string | number) {
     const refreshJti = uuidv4();
@@ -70,7 +68,7 @@ export class AuthService {
     const access_token = await this.jwtService.signAsync(accessPayload, {
       secret: this.config.get<string>('JWT_SECRET'),
       expiresIn:
-        parseInt(this.config.get<string>('ACCESS_TTL_MS') || '600000') / 1000,
+        parseInt(this.config.get<string>('ACCESS_TTL_MS') || '900000') / 1000,
     });
 
     return { access_token, refresh_token, refreshJti, ttlMs };
@@ -150,7 +148,6 @@ export class AuthService {
   }
 
   async verifyJwt(token: string) {
-    this.logger.log('verifyJwt');
     const payload = await this.jwtService.verifyAsync(token).catch(() => null);
     if (!payload) return null;
     if (payload.jti && (await this.revocation.isRevoked(payload.jti)))
@@ -159,7 +156,6 @@ export class AuthService {
   }
 
   public async generateToken(userId: string | number, email: string) {
-    const logger = new LineLogger('generateToken');
     const access_token = await this.jwtService.signAsync(
       { sub: userId, email },
       { expiresIn: '15m' },
@@ -175,9 +171,13 @@ export class AuthService {
         secret: this.config.get<string>('JWT_REFRESH_SECRET'),
       });
     } catch {
-      throw new UnauthorizedException('ACCESS_TOKEN_EXPIRED');
+      // throw new UnauthorizedException('ACCESS_TOKEN_EXPIRED');
+      // Inside your JwtStrategy or AuthGuard
+      throw new UnauthorizedException({
+        message: 'The access token has expired',
+        code: 'ACCESS_TOKEN_EXPIRED', // <-- This is the magic key
+      });
     }
-    new LineLogger('refresh').log('payload', payload);
     const oldJti = payload.jti;
     const userId = payload.sub;
     if (!oldJti || !userId)
@@ -196,10 +196,7 @@ export class AuthService {
     } catch (err) {
       // If rotation fails, check if the refresh token is already rotated and use the latest one
       // This fallback is optional and can be removed if strict rotation is required
-      new LineLogger('refresh').error(
-        'Rotation failed, fallback to latest',
-        (err as any)?.message ?? String(err),
-      );
+
       throw new UnauthorizedException('REFRESH_TOKEN_EXPIRED');
     }
 

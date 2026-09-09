@@ -1,11 +1,12 @@
+import { LineLogger } from '@/common/utils/lineLogger';
+import { AuthService } from '@/modules/auth/auth.service';
+import { CreateUserDto } from '@/modules/user/dto/create-user.dto';
+import { UserService } from '@/modules/user/user.service';
 import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { Profile } from 'passport';
 import { Strategy } from 'passport-google-oauth20';
-import { AuthService } from 'src/modules/auth/auth.service';
-import { CreateUserDto } from 'src/modules/user/dto/create-user.dto';
-import { UserService } from 'src/modules/user/user.service';
 
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
@@ -40,7 +41,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     }
 
     if (!email) {
-      console.warn(
+      new LineLogger().warn(
         `GoogleStrategy: email missing for profile id=${profile.id}, proceeding with synthetic email`,
       );
       email = `${profile.id}@google.local`;

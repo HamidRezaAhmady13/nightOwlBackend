@@ -1,5 +1,5 @@
+import { StorageService } from '@/core/storage/storage.service';
 import { Test, TestingModule } from '@nestjs/testing';
-import { StorageService } from 'src/core/storage/storage.service';
 
 describe('StorageService', () => {
   let service: StorageService;

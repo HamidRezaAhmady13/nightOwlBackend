@@ -1,5 +1,5 @@
+import { NotificationController } from '@/modules/notifications/notification.controller';
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotificationController } from 'src/modules/notifications/notification.controller';
 
 describe('NotificationController', () => {
   let controller: NotificationController;

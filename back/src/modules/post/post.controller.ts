@@ -10,7 +10,6 @@ import {
   Patch,
   Post,
   Query,
-  UnauthorizedException,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -21,17 +20,24 @@ import * as fs from 'fs';
 import { diskStorage } from 'multer';
 import * as path from 'path';
 
-import { CurrentUser } from 'src/common/decorators/current-user.decorator';
-import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
-import { CreatePostDto } from 'src/modules/post/dto/create-post.dto';
-import { PostService } from 'src/modules/post/post.service';
-import { User } from 'src/modules/user/entity/user.entity';
+import { CurrentUser } from '@/common/decorators/current-user.decorator';
+import {
+  JwtAuthGuard,
+  OptionalJwtAuthGuard,
+} from '@/modules/auth/guards/jwt-auth.guard';
+import { CreatePostDto } from '@/modules/post/dto/create-post.dto';
+import { PostService } from '@/modules/post/post.service';
+import { User } from '@/modules/user/entity/user.entity';
+import { PostQueryService } from './post-query.service';
 
-@UseGuards(JwtAuthGuard)
 @Controller('posts')
 export class PostController {
-  constructor(private readonly postService: PostService) {}
+  constructor(
+    private readonly postService: PostService,
+    private readonly postQueryService: PostQueryService,
+  ) {}
 
+  @UseGuards(JwtAuthGuard)
   @Post()
   @UseInterceptors(
     FileInterceptor('media', {
@@ -66,47 +72,48 @@ export class PostController {
     return this.postService.createPost(createPostDto, user, media);
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/toggle-like')
+  async toggleLike(@Param('id') postId: string, @CurrentUser() user: User) {
+    return this.postService.toggleLike(postId, user);
+  }
+
   @Get('feed')
+  @UseGuards(OptionalJwtAuthGuard)
   async getFeed(
     @CurrentUser() user: { id?: string; userId?: string },
     @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
   ) {
-    const id = user.id ?? user.userId;
-    if (!id)
-      throw new UnauthorizedException(
-        'no user is found with that id for fecthing feed',
-      );
-    return this.postService.getFeed(id, limit, page);
+    const id = user?.id ?? user?.userId;
+    if (id) {
+      return this.postQueryService.getFeed(id, limit, page);
+    }
+    return this.postQueryService.getPublicFeed(limit, page);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get()
   getPostsCursor(
     @CurrentUser() user: User,
     @Query('limit') limit = '24',
     @Query('cursor') cursor?: string,
   ) {
-    return this.postService.getPostsCursor(user.id, { limit: +limit, cursor });
-  }
-
-  @Post(':id/toggle-like')
-  async toggleLike(@Param('id') postId: string, @CurrentUser() user: User) {
-    return this.postService.toggleLike(postId, user);
+    return this.postQueryService.getPostsCursor(user.id, {
+      limit: +limit,
+      cursor,
+    });
   }
 
   @Get(':id')
   async getPostById(@Param('id') id: string) {
-    const post = await this.postService.getPost(id);
+    const post = await this.postQueryService.getPost(id);
 
     if (!post) throw new NotFoundException('Post not found');
     return post;
   }
 
-  @Delete(':id')
-  async deletePostById(@Param('id') id: string, @CurrentUser() user: User) {
-    await this.postService.deletePost(id, user.id);
-  }
-
+  @UseGuards(JwtAuthGuard)
   @Patch(':id')
   async updatePost(
     @Param('id') id: string,
@@ -114,5 +121,11 @@ export class PostController {
     @CurrentUser() user: User,
   ) {
     return this.postService.updatePost(id, { content }, user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete(':id')
+  async deletePostById(@Param('id') id: string, @CurrentUser() user: User) {
+    await this.postService.deletePost(id, user.id);
   }
 }

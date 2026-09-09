@@ -1,27 +1,26 @@
-import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule, Post } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import * as Joi from 'joi';
 
-import { RedisModule } from 'src/core/redis/redis.module';
-import { AuthModule } from 'src/modules/auth/auth.module';
-import { RefreshToken } from 'src/modules/auth/entity/refresh-token.entity';
-import { CommentModule } from 'src/modules/comment/comment.module';
-import { Comment } from 'src/modules/comment/entity/comment.entity';
-import { NotificationEntity } from 'src/modules/notifications/entity/notification.entity';
-import { NotificationModule } from 'src/modules/notifications/notification.module';
-import { Media } from 'src/modules/post/entity/media.entity';
-import { Post } from 'src/modules/post/entity/posts.entity';
-import { PostModule } from 'src/modules/post/post.module';
-import { SocketModule } from 'src/modules/socket/socket.module';
-import { User } from 'src/modules/user/entity/user.entity';
-import { UserModule } from 'src/modules/user/user.module';
+import { Comment } from '@/modules/comment/entity/comment.entity';
 
+import { RequestLoggerMiddleware } from '@/common/middleware/request-logger.middleware';
+import { RedisModule } from '@/core/redis/redis.module';
+import { AuthModule } from '@/modules/auth/auth.module';
+import { RefreshToken } from '@/modules/auth/entity/refresh-token.entity';
+import { CommentModule } from '@/modules/comment/comment.module';
+import { NotificationEntity } from '@/modules/notifications/entity/notification.entity';
+import { NotificationModule } from '@/modules/notifications/notification.module';
+import { Media } from '@/modules/post/entity/media.entity';
+import { PostModule } from '@/modules/post/post.module';
+import { SocketModule } from '@/modules/socket/socket.module';
+import { User } from '@/modules/user/entity/user.entity';
+import { UserModule } from '@/modules/user/user.module';
 import { join } from 'path';
-import { AppController } from 'src/app/app.controller';
-import { AppService } from 'src/app/app.service';
-import { RequestLoggerMiddleware } from 'src/common/middleware/request-logger.middleware';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
 
 @Module({
   imports: [
@@ -88,6 +87,6 @@ import { RequestLoggerMiddleware } from 'src/common/middleware/request-logger.mi
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(RequestLoggerMiddleware).forRoutes('*');
+    consumer.apply(RequestLoggerMiddleware).forRoutes('{*path}');
   }
 }

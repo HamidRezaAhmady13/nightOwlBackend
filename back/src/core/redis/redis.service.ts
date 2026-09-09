@@ -1,16 +1,12 @@
-import {
-  Injectable,
-  Logger,
-  OnModuleDestroy,
-  OnModuleInit,
-} from '@nestjs/common';
+import { LineLogger } from '@/common/utils/lineLogger';
+import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis, { RedisOptions } from 'ioredis';
 
 @Injectable()
 export class RedisService implements OnModuleInit, OnModuleDestroy {
-  private readonly logger = new Logger(RedisService.name);
-  public client!: Redis; // <-- change from private to public
+  private readonly logger = new LineLogger();
+  public client!: Redis;
 
   constructor(private readonly config: ConfigService) {}
 

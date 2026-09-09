@@ -1,0 +1,7 @@
+node_modules
+.next
+dist
+uploads/*
+!uploads/default-avatar.png
+Dockerfile*
+docker-compose*

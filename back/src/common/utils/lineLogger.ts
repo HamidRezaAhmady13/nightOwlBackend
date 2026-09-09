@@ -1,13 +1,45 @@
-import { Logger } from '@nestjs/common';
+// src/common/utils/line-logger.ts
+import { Logger, LoggerService } from '@nestjs/common';
 
-export class LineLogger extends Logger {
-  log(message: string, context?: string) {
-    const stack = new Error().stack?.split('\n')[2]?.trim();
-    super.log(`${message} (${stack})`, context);
+export class LineLogger implements LoggerService {
+  constructor(private readonly defaultContext = 'App') {}
+
+  private caller(): string | null {
+    const s = new Error().stack;
+    const line = s
+      ?.split('\n')
+      .find((ln, i) => i > 2 && !/node_modules|internal|LineLogger/.test(ln));
+    const m =
+      line?.match(/\((.*):(\d+):(\d+)\)$/) ||
+      line?.match(/at (.*):(\d+):(\d+)$/);
+    if (!m) return null;
+    const [, file, l, c] = m;
+    return file.split('/').slice(-2).join('/') + `:${l}:${c}`;
   }
 
-  error(message: string, trace?: string, context?: string) {
-    const stack = new Error().stack?.split('\n')[2]?.trim();
-    super.error(`${message} (${stack})`, trace, context);
+  private findLocation() {
+    const loc = this.caller();
+    const time = new Date().toLocaleString().split(',')[1];
+    return `${loc} - ${time}`;
+  }
+
+  log(message: unknown) {
+    new Logger(this.findLocation()).log(message);
+  }
+
+  error(message: unknown, trace?: string) {
+    new Logger(this.findLocation()).error(`${message} -${trace}`);
+  }
+
+  warn(message: unknown) {
+    new Logger(this.findLocation()).warn(`${message}  `);
+  }
+
+  debug(message: unknown) {
+    new Logger(this.findLocation()).debug(`${message}  `);
+  }
+
+  verbose(message: unknown) {
+    new Logger(this.findLocation()).verbose(`${message}  `);
   }
 }

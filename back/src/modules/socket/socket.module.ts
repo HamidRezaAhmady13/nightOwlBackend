@@ -1,8 +1,8 @@
+import { SocketGateway } from '@/modules/socket/socket.gateway';
+import { SocketService } from '@/modules/socket/socket.service';
 import { Global, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
-import { SocketGateway } from 'src/modules/socket/socket.gateway';
-import { SocketService } from 'src/modules/socket/socket.service';
 
 @Global()
 @Module({

@@ -1,16 +1,16 @@
+import { Comment } from '@/modules/comment/entity/comment.entity';
+import { NotificationEntity } from '@/modules/notifications/entity/notification.entity';
+import { NotificationController } from '@/modules/notifications/notification.controller';
+import { NotificationService } from '@/modules/notifications/notification.service';
+import { NotificationsProcessor } from '@/modules/notifications/notifications.processor';
+import { NotificationsQueueMonitor } from '@/modules/notifications/NotificationsQueueMonitor';
+import { Post } from '@/modules/post/entity/posts.entity';
+import { PostModule } from '@/modules/post/post.module';
+import { User } from '@/modules/user/entity/user.entity';
 import { BullModule } from '@nestjs/bull';
 import { forwardRef, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Comment } from 'src/modules/comment/entity/comment.entity';
-import { NotificationEntity } from 'src/modules/notifications/entity/notification.entity';
-import { NotificationController } from 'src/modules/notifications/notification.controller';
-import { NotificationService } from 'src/modules/notifications/notification.service';
-import { NotificationsProcessor } from 'src/modules/notifications/notifications.processor';
-import { NotificationsQueueMonitor } from 'src/modules/notifications/NotificationsQueueMonitor';
-import { Post } from 'src/modules/post/entity/posts.entity';
-import { PostModule } from 'src/modules/post/post.module';
-import { User } from 'src/modules/user/entity/user.entity';
 
 @Module({
   controllers: [NotificationController],

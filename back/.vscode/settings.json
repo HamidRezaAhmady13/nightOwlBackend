@@ -1,10 +1,50 @@
+// {
+//   "editor.defaultFormatter": "esbenp.prettier-vscode",
+//   "prettier.prettierPath": "./node_modules/prettier",
+//   "window.titleBarStyle": "custom",
+//   "workbench.colorCustomizations": {
+//     "titleBar.activeBackground": "#113e52",
+//     "window.titleBarStyle": "#113e52",
+//     //  window.titleBarStyle
+//     "titleBar.inactiveBackground": "#011e32",
+//     "titleBar.activeForeground": "#ffffff",
+//     "titleBar.inactiveForeground": "#ffffff"
+//   }
+// }
+
+// {
+//   "editor.defaultFormatter": "esbenp.prettier-vscode",
+//   "prettier.prettierPath": "./node_modules/prettier",
+//   // "window.titleBarStyle": "custom",
+//   "workbench.colorCustomizations": {
+//     "titleBar.activeBackground": "#113e52",
+//     "titleBar.inactiveBackground": "#011e32",
+//     "titleBar.activeForeground": "#ffffff",
+//     "titleBar.inactiveForeground": "#ffffff",
+//     "activityBar.background": "#113e52",
+//     "statusBar.background": "#113e52",
+//     "statusBar.foreground": "#ffffff"
+//   }
+// }
 {
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "prettier.prettierPath": "./node_modules/prettier",
   "workbench.colorCustomizations": {
+    //   // "statusBar.background": "#113e52",
+    //   "statusBar.foreground": "#ffffff",
     "titleBar.activeBackground": "#113e52",
     "titleBar.inactiveBackground": "#011e32",
     "titleBar.activeForeground": "#ffffff",
     "titleBar.inactiveForeground": "#ffffff"
-  }
+    //   // "sideBar.foreground": "#ffffff",
+    //   // "sideBar.background": "#000000",
+
+    //   "activityBar.inactiveForeground": "#74889b",
+    //   // "activityBar.background": "#113e52",
+    //   "activityBar.foreground": "#ffffff",
+
+    //   "activityBar.background": "#113e52",
+    //   "statusBar.background": "#113e52"
+  },
+  "window.title": "⚙️ [BACKEND] — ${rootName} (${activeEditorShort}) ⚙️"
 }

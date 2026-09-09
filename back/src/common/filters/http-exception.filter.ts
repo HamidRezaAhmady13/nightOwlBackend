@@ -6,11 +6,12 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { LineLogger } from '../utils/lineLogger';
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost) {
-    console.error('🔥 Uncaught Exception:', exception);
+    new LineLogger().error(`🔥 Uncaught Exception: ${exception}`);
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();

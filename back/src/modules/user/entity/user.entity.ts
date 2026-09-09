@@ -9,10 +9,10 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-import { Comment } from 'src/modules/comment/entity/comment.entity';
-import { NotificationEntity } from 'src/modules/notifications/entity/notification.entity';
-import { Media } from 'src/modules/post/entity/media.entity';
-import { Post } from 'src/modules/post/entity/posts.entity';
+import { Comment } from '@/modules/comment/entity/comment.entity';
+import { NotificationEntity } from '@/modules/notifications/entity/notification.entity';
+import { Media } from '@/modules/post/entity/media.entity';
+import { Post } from '@/modules/post/entity/posts.entity';
 
 @Entity('users')
 export class User {

@@ -1,5 +1,5 @@
+import { MediaType } from '@/common/enums/media-type.enum';
 import { IsEnum, IsOptional, IsString } from 'class-validator';
-import { MediaType } from 'src/common/enums/media-type.enum';
 
 export class CreateMediaDto {
   @IsEnum(MediaType)

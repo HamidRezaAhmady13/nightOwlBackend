@@ -1,6 +1,6 @@
+import { AuthService } from '@/modules/auth/auth.service';
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Socket } from 'socket.io';
-import { AuthService } from 'src/modules/auth/auth.service';
 
 @Injectable()
 export class SocketAuthGuard implements CanActivate {

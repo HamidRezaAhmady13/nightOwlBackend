@@ -1,3 +1,6 @@
+import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
+import { NotificationService } from '@/modules/notifications/notification.service';
+import { SocketService } from '@/modules/socket/socket.service';
 import {
   BadRequestException,
   Body,
@@ -10,9 +13,6 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
-import { NotificationService } from 'src/modules/notifications/notification.service';
-import { SocketService } from 'src/modules/socket/socket.service';
 import {
   CreateNotificationWithtypesDto,
   CreateNtfDto,

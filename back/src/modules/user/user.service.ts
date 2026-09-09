@@ -1,4 +1,13 @@
 // user.service.ts
+import { RedisService } from '@/core/redis/redis.service';
+import { StorageService } from '@/core/storage/storage.service';
+import { NotificationType } from '@/modules/notifications/dto/ntfDto';
+import { NotificationService } from '@/modules/notifications/notification.service';
+import { SocketService } from '@/modules/socket/socket.service';
+import { CreateUserDto } from '@/modules/user/dto/create-user.dto';
+import { SafeUserDto } from '@/modules/user/dto/safe-user.dto';
+import { UpdateUserDto } from '@/modules/user/dto/update-user.dto';
+import { User } from '@/modules/user/entity/user.entity';
 import {
   BadRequestException,
   ConflictException,
@@ -9,15 +18,6 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import { plainToInstance } from 'class-transformer';
-import { RedisService } from 'src/core/redis/redis.service';
-import { StorageService } from 'src/core/storage/storage.service';
-import { NotificationType } from 'src/modules/notifications/dto/ntfDto';
-import { NotificationService } from 'src/modules/notifications/notification.service';
-import { SocketService } from 'src/modules/socket/socket.service';
-import { CreateUserDto } from 'src/modules/user/dto/create-user.dto';
-import { SafeUserDto } from 'src/modules/user/dto/safe-user.dto';
-import { UpdateUserDto } from 'src/modules/user/dto/update-user.dto';
-import { User } from 'src/modules/user/entity/user.entity';
 import { Repository } from 'typeorm';
 
 @Injectable()
@@ -220,19 +220,12 @@ export class UserService {
 
   async removeAvatar(userId: string): Promise<void> {
     const user = await this.userRepo.findOneBy({ id: userId });
-
-    if (!user) {
-      // 2️⃣ Handle the `null` case
-      throw new NotFoundException(`User ${userId} not found`);
-    }
-
+    if (!user) throw new NotFoundException(`User  ${userId} not found`);
     if (user.avatarUrl) {
-      // 3️⃣ Delete from disk or cloud
       await this.storageService.delete(user.avatarUrl);
-
-      // 4️⃣ Clear the DB column and save
       user.avatarUrl = null;
       await this.userRepo.save(user);
+      await this.redis.del(`user:${userId}`);
     }
   }
 

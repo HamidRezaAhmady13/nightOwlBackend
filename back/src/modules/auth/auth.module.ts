@@ -4,17 +4,17 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 
+import { RedisModule as LocalRedisModule } from '@/core/redis/redis.module';
+import { AuthController } from '@/modules/auth/auth.controller';
+import { AuthService } from '@/modules/auth/auth.service';
+import { RefreshToken } from '@/modules/auth/entity/refresh-token.entity';
+import { RefreshTokenService } from '@/modules/auth/refresh-token.service';
+import { RevocationService } from '@/modules/auth/revocation.service';
+import { GoogleStrategy } from '@/modules/auth/strategies/google.strategy';
+import { JwtStrategy } from '@/modules/auth/strategies/jwt.strategy';
+import { JwtRefreshStrategy } from '@/modules/auth/strategies/jwtRefreshStrategy';
+import { UserModule } from '@/modules/user/user.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { RedisModule as LocalRedisModule } from 'src/core/redis/redis.module';
-import { AuthController } from 'src/modules/auth/auth.controller';
-import { AuthService } from 'src/modules/auth/auth.service';
-import { RefreshToken } from 'src/modules/auth/entity/refresh-token.entity';
-import { RefreshTokenService } from 'src/modules/auth/refresh-token.service';
-import { RevocationService } from 'src/modules/auth/revocation.service';
-import { GoogleStrategy } from 'src/modules/auth/strategies/google.strategy';
-import { JwtStrategy } from 'src/modules/auth/strategies/jwt.strategy';
-import { JwtRefreshStrategy } from 'src/modules/auth/strategies/jwtRefreshStrategy';
-import { UserModule } from 'src/modules/user/user.module';
 
 @Module({
   imports: [
