@@ -73,7 +73,7 @@ export default function PostMedia({
   return (
     <div className="space-y-md " id={`post-media-${post.id}`}>
       {images && (
-        <GeneralLink href={`/post/${post.id}/{${createSlug(post.content)}`}>
+        <GeneralLink href={`/post/${post.id}/${createSlug(post.content)}`}>
           <PostGallery mode={mode} images={images} />
         </GeneralLink>
       )}

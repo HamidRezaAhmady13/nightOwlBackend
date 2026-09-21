@@ -19,11 +19,13 @@ export default function PostsGrid({ username }: { username?: string }) {
   if (error && items.length === 0)
     return <div className="p-lg u-text-error">Error loading posts</div>;
 
+  if (!username) return null;
+
   return (
     <div className="max-w-4xl mx-auto p-lg space-y-lg">
       <div className="grid grid-cols-3 gap-xs">
         {items.map((p) => {
-          const postUrl = `/post/${p.id}/${createSlug(p.content)}`;
+          const postUrl = `/post/${p.id}/${createSlug(p.content || "")}`;
 
           return (
             <PostTile
@@ -31,7 +33,7 @@ export default function PostsGrid({ username }: { username?: string }) {
               post={{
                 id: p.id,
                 imageUrl: p.imageUrl,
-                content: createSlug(p.content),
+                content: p.content ?? "",
               }}
             />
           );

@@ -8,7 +8,7 @@ export function userProfileMetadata(username: string): Metadata {
       title: `${username} – OwlVibe Profile`,
       description: `See ${username}'s activity on OwlVibe.`,
       url: `https://hamidreza-ahmadi.sbs/users/${username}`,
-      images: [`https://hamidreza-ahmadi.sbs/api/og/${username}.png`],
+      images: [`https://hamidreza-ahmadi.sbs/api/og-about.png`],
     },
     alternates: {
       canonical: `https://hamidreza-ahmadi.sbs/users/${username}`,
@@ -28,7 +28,7 @@ export function postMetadata(
     postDescription.length > 160 ? `${previewText}...` : previewText;
 
   return {
-    title: `Post on OwlVibe`, // Keep title simple since posts don't have titles
+    title: `${cleanDesc.slice(0, 60) || "Post"} – OwlVibe`,
     description: cleanDesc || "View this post on OwlVibe.", // Fallback if empty
     openGraph: {
       title: `Post on OwlVibe`,
@@ -38,14 +38,11 @@ export function postMetadata(
   };
 }
 
-export function createSlug(text?: string | null): string {
-  if (!text) return "post";
-
+export function createSlug(text: string): string {
   return text
-    .substring(0, 50) // Only take the first 50 chars so the URL isn't massive
     .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "") // strip everything except letters, numbers, spaces, hyphens
     .trim()
-    .replace(/[^\w\s-]/g, "") // Remove weird characters like emojis or punctuation
-    .replace(/[\s_-]+/g, "-") // Replace spaces with hyphens
-    .replace(/^-+|-+$/g, ""); // Remove trailing hyphens
+    .replace(/\s+/g, "-")
+    .slice(0, 60);
 }

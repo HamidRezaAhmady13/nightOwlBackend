@@ -43,8 +43,86 @@ unset all_proxy ALL_PROXY http_proxy https_proxy socks_proxy
 
 
 
+ 
+ 
 
-public feed
-socket cpu usage and multiple connection!
-accesstoken and env needs to be revert back to 15min!
-about us revision
+
+
+ 1. Call Stack (Sync code)
+   ↓
+2. process.nextTick queue (Node's highest priority microtask)
+   ↓
+3. Promise Microtask queue (.then, .catch, queueMicrotask)
+   ↓
+4. Event Loop Phases (Macrotasks):
+   → Timers
+   → Pending Callbacks (System errors)
+   → Poll (I/O)
+   → Check (setImmediate)
+   → Close
+
+
+EVENT LOOP (the whole mechanism)
+  ├── runs Sync code (call stack) until empty
+  ├── drains nextTick queue
+  ├── drains microtask queue
+  ├── runs Phase 1: Timers        ← processes macrotasks here
+  ├── drains nextTick + microtasks
+  ├── runs Phase 2: Pending       ← macrotasks
+  ├── drains nextTick + microtasks
+  ├── runs Phase 4: Poll          ← macrotasks (I/O)
+  ├── drains nextTick + microtasks
+  ├── runs Phase 5: Check         ← macrotasks (setImmediate)
+  ├── drains nextTick + microtasks
+  ├── runs Phase 6: Close         ← macrotasks
+  └── repeats forever
+
+===============
+tsconfig
+iterable enumarable
+ reflect and proxy
+ document and window obj HTMLCollection NodeList prototype
+libuv
+
+ 
+
+ ==============================
+
+
+ Dm A A# C
+
+
+
+ 1.17-13----------------------------17-13-17-------
+ 2.------15----------------------15----------15----
+ 3.---------14----------------14----------------14-
+ 4.------------15----------15----------------------
+ 5.---------------17-12-17-------------------------
+ 6.------------------------------------------------
+
+
+
+ 1.17-13----------------------------17-13-17-------
+ 2.------15----------------------15----------15----
+ 3.---------14----------------14----------------14-
+ 4.------------15----------15----------------------
+ 5.---------------17-12-17-------------------------
+ 6.------------------------------------------------
+
+
+                      !08 0r 07?! 
+ 1.12-09----------------------------12-09-12-------
+ 2.------10----------------------10----------10----
+ 3.---------09----------------09----------------09-
+ 4.------------10----------10----------------------
+ 5.---------------12-08-17-------------------------
+ 6.------------------------------------------------
+
+
+
+ 1.------------10-13-15-13-12----12-15-20-15-12----
+ 2.---------11----------------13----------------13-
+ 3.------10----------------------------------------
+ 4.---11-------------------------------------------
+ 5.13----------------------------------------------
+ 6.------------------------------------------------

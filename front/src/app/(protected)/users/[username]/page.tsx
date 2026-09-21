@@ -1,14 +1,14 @@
 import { userProfileMetadata } from "@/features/lib/seo";
-import UserProfileClient from "./UserProfileClient"; // 👈 Import the client component!
+import UserProfileClient from "./UserProfileClient";
 
 export async function generateMetadata({
   params,
 }: {
-  params: { username: string };
+  params: Promise<{ username: string }>;
 }) {
-  return userProfileMetadata(params.username);
+  const { username } = await params;
+  return userProfileMetadata(username);
 }
-
 export default function UserProfilePage() {
   return <UserProfileClient />;
 }

@@ -6,6 +6,7 @@ import React from "react";
 import { GeneralLink } from "../shared/GeneralLink";
 import { MdOndemandVideo } from "react-icons/md";
 import { BACKEND_BASE } from "@/features/lib/api";
+import { createSlug } from "@/features/lib/seo";
 
 function isVideo(url?: string | null) {
   if (!url) return false;
@@ -43,7 +44,7 @@ export default function PostTile({
 
   return (
     <GeneralLink
-      href={`/post/${post.id}/${post.content}`}
+      href={`/post/${post.id}/${createSlug(post.content || "")}`}
       className="relative w-full aspect-square u-focus-not-visible"
       onClick={handleLinkClick}
     >

@@ -4,7 +4,6 @@
 import CommentsModal from "@/features/components/comment/CommentsModal";
 import PostShell from "@/features/components/posts/PostShell";
 import { usePostQuery } from "@/features/hooks/usePosts";
-import { useUserStore } from "@/features/store/userStore";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 
@@ -14,7 +13,6 @@ export default function PostClient({ postId }: { postId: string }) {
 
   const { data: post, isLoading } = usePostQuery({ id: postId });
 
-  // const currentUser = useUserStore((s) => s.user);
   const [isOpenModal, setIsOpenModal] = useState<Boolean>(Boolean(commentId));
 
   if (isLoading) return null;

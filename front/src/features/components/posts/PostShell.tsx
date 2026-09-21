@@ -6,8 +6,6 @@ import { PostContent } from "./PostContent";
 import PostMedia from "./PostMedia";
 import PostActions from "./PostActions";
 import { useUserStore } from "@/features/store/userStore";
-import { GeneralLink } from "../shared/GeneralLink";
-import { createSlug } from "@/features/lib/seo";
 import { getPostFiles } from "@/features/utils/extractPostMedia";
 
 export default function PostShell({
