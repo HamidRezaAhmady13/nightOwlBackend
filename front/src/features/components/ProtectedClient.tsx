@@ -17,7 +17,7 @@ export default function ProtectedClient({
 
   const segments = pathname.split("/").filter(Boolean);
   const isPublicProfile = segments.length === 2 && segments[0] === "users";
-  const isPublicPost = segments.length === 3 && segments[0] === "post";
+  const isPublicPost = segments.length > 2 && segments[0] === "post";
   const isPublicFeed = segments.length === 1 && segments[0] === "feed";
 
   const isPublicPath =

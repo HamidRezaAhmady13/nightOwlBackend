@@ -1,6 +1,8 @@
 import { userProfileMetadata } from "@/features/lib/seo";
 import UserProfileClient from "./UserProfileClient";
 
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata({
   params,
 }: {
